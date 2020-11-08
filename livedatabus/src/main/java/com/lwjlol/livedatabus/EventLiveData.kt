@@ -19,6 +19,7 @@ class EventLiveData<T> : MutableLiveData<T>() {
         owner: LifecycleOwner,
         observer: Observer<in T>
     ) {
+
         observe(owner, observer = {
             observer.onChanged(it)
         })

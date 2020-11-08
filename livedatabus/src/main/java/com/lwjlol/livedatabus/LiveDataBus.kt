@@ -17,16 +17,15 @@ class LiveDataBus private constructor() {
         }
 
     companion object {
-        val instance = Singleton.instance
-
         @JvmStatic
         private var DEFAULT_MAX_EVENT = 20
+
+        val instance = Singleton.instance
 
         @JvmStatic
         fun setMaxSize(maxSize: Int) {
             this.DEFAULT_MAX_EVENT = maxSize
         }
-
     }
 
     /**
