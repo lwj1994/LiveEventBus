@@ -1,25 +1,31 @@
 package com.lwjlol.livedatabus.demo
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.TextView
-import com.lwjlol.livedatabus.LiveDataBus
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.lwjlol.liveeventbus.LiveEventBus
 
 class MainActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
-    LiveDataBus.instance.on(FirstEvent::class.java).observe(this){
+    LiveEventBus.instance.on(FirstEvent::class.java).observe(this) {
       findViewById<TextView>(R.id.textview).text = it.name
+      Toast.makeText(this, "FirstEvent", Toast.LENGTH_LONG).show()
     }
 
-    LiveDataBus.instance.postSticky(SecondEvent("SecondEvent postSticky"))
-    LiveDataBus.instance.post(SecondEvent("SecondEvent"))
 
-    findViewById<TextView>(R.id.textview).setOnClickListener{
-      startActivity(Intent(this,SecondActivity::class.java))
+    LiveEventBus.instance.on(ForeverEvent::class.java).observeForever(this) {
+      Toast.makeText(this, "ForeverEvent", Toast.LENGTH_LONG).show()
+    }
+
+    LiveEventBus.instance.postSticky(SecondEvent("SecondEvent postSticky"))
+
+    findViewById<TextView>(R.id.textview).setOnClickListener {
+      startActivity(Intent(this, SecondActivity::class.java))
     }
   }
 }
