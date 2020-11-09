@@ -2,7 +2,7 @@
 本库是使用 LiveData 实现的 EventBus，目前网上很火的美团方案实现的 EventBus 对 LiveData 源码入侵太严重，违背 LiveData 的设计理念，`LiveEventBus` 就是一种优雅的实现方式。
 `LiveEventBus` 的优点：
 * __类型安全__
-* __可以设置 event 缓存的个数
+* __可以设置 event 缓存的个数__
 * __基于 LiveData 与 Lifecycle 紧密联系，可以自由选择是否关联 Lifecycle 的周期__
 * __支持粘性事件__
 * __只有 2 个类十分小巧，你可以直接 copy 去使用__
