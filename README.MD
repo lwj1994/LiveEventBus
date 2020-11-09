@@ -1,3 +1,9 @@
+
+[ ![Download](https://api.bintray.com/packages/wenchieh/maven/LiveEventBus/images/download.svg) ](https://bintray.com/wenchieh/maven/LiveEventBus/_latestVersion)
+```
+implementation 'com.lwjlol:liveeventbus:0.0.1'
+```
+
 ## 前言
 本库是使用 LiveData 实现的 EventBus，目前网上很火的美团方案实现的 EventBus 对 LiveData 源码入侵太严重，我觉得太不优雅了。实现一个 EventBus 其实很简单，`LiveEventBus` 就是一种优雅的实现方式，没有修改任何源码，也没有任何反射。
 `LiveEventBus` 的优点：
@@ -8,6 +14,8 @@
 * __支持粘性事件__
 * __只有 2 个类十分小巧，你可以直接 copy 去使用__
 ## 使用方法
+
+
 LiveEventBus 将事件分为这 4 种，每种有对应的使用方法，不要混淆他们。
 * 关联生命周期的普通事件
 * 关联生命周期的粘性事件
