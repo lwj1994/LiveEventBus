@@ -19,7 +19,7 @@ class LiveEventBus private constructor() {
         val instance = Singleton.instance
 
         @JvmStatic
-        fun setMaxSize(maxSize: Int) {
+        fun setInitMaxEventSize(maxSize: Int) {
             DEFAULT_MAX_EVENT = maxSize
         }
     }

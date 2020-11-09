@@ -11,6 +11,7 @@ class MainActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
+    LiveEventBus.setInitMaxEventSize(200)
 
     LiveEventBus.instance.on(FirstEvent::class.java).observe(this) {
       findViewById<TextView>(R.id.textview).text = it.name
