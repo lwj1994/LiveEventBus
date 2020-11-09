@@ -1,7 +1,8 @@
 ## 前言
-本库是使用 LiveData 实现的 EventBus，目前网上很火的美团方案实现的 EventBus 对 LiveData 源码入侵太严重，违背 LiveData 的设计理念，`LiveEventBus` 就是一种优雅的实现方式。
+本库是使用 LiveData 实现的 EventBus，目前网上很火的美团方案实现的 EventBus 对 LiveData 源码入侵太严重，我觉得太不优雅了。实现一个 EventBus 其实很简单，`LiveEventBus` 就是一种优雅的实现方式，没有修改任何源码，也没有任何反射。
 `LiveEventBus` 的优点：
 * __类型安全__
+* __没有反射，不修改源码，无需担心 LiveData 版本问题__
 * __可以设置 event 缓存的个数__
 * __基于 LiveData 与 Lifecycle 紧密联系，可以自由选择是否关联 Lifecycle 的周期__
 * __支持粘性事件__
