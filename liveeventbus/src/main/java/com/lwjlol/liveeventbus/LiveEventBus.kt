@@ -3,7 +3,11 @@ package com.lwjlol.liveeventbus
 import android.os.Looper
 import androidx.annotation.MainThread
 import androidx.collection.LruCache
-import androidx.lifecycle.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
+import androidx.lifecycle.OnLifecycleEvent
 
 class LiveEventBus private constructor() {
   private val liveDataMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
@@ -42,12 +46,12 @@ class LiveEventBus private constructor() {
     return liveData
   }
 
-  private fun postInternal(
+  private fun sendInternal(
     event: Any,
     sticky: Boolean
   ) {
     if (Looper.myLooper() != Looper.getMainLooper()) {
-      throw IllegalStateException("LiveEventBus only support post on main thread！")
+      throw IllegalStateException("LiveEventBus only support run on main thread！")
     }
     @Suppress("UNCHECKED_CAST") val liveData =
       ((liveDataMap.get(event::class.java) ?: ifProcessorMapGetNull(
@@ -62,10 +66,10 @@ class LiveEventBus private constructor() {
   }
 
   @MainThread
-  fun postSticky(event: Any) = postInternal(event, true)
+  fun sendSticky(event: Any) = sendInternal(event, true)
 
   @MainThread
-  fun post(event: Any) = postInternal(event, false)
+  fun send(event: Any) = sendInternal(event, false)
 
   private object Singleton {
     val instance = LiveEventBus()

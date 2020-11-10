@@ -32,15 +32,15 @@ LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner) {
     //
 }
 // 发送事件：
-LiveEventBus.instance.post(Event()）
+LiveEventBus.instance.send(Event()）
 ```
 ### 关联生命周期的粘性事件
 和上述事件【关联生命周期的普通事件】一样，但是多了粘性的特性：
 
-* __支持先 postSticky 发送事件，然后再  observeSticky__
+* __支持先 sendSticky 发送事件，然后再  observeSticky__
 ```
 // 发送粘性事件：
-LiveEventBus.instance.postSticky(Event()）
+LiveEventBus.instance.sendSticky(Event()）
 
 //接收粘性事件：
 LiveEventBus.instance.on(Event::class.java).observeSticky(lifecycleOwner) {
@@ -58,15 +58,15 @@ LiveEventBus.instance.on(ForeverEvent::class.java).observeForever(this) {
     //
 }
 // 发送事件
-LiveEventBus.instance.post(ForeverEvent())
+LiveEventBus.instance.send(ForeverEvent())
 ```
 
 ### 不关联生命周期 (但是会自动销毁) 的粘性事件
 和【不关联生命周期 (但是会自动销毁) 的普通事件】类似，但是多了粘性的特性：
-* __支持先 postSticky 发送事件，然后再  observeSticky__
+* __支持先 sendSticky 发送事件，然后再  observeSticky__
 ```
 // 发送粘性事件
-LiveEventBus.instance.postSticky(ForeverEvent())
+LiveEventBus.instance.sendSticky(ForeverEvent())
 // 接收粘性事件
 LiveEventBus.instance.on(ForeverEvent::class.java).observeForeverSticky(this) {
     //
