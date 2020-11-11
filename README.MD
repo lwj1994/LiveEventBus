@@ -1,7 +1,7 @@
 
 [ ![Download](https://api.bintray.com/packages/wenchieh/maven/LiveEventBus/images/download.svg) ](https://bintray.com/wenchieh/maven/LiveEventBus/_latestVersion)
 ```
-implementation 'com.lwjlol:liveeventbus:0.0.1'
+implementation 'com.lwjlol:liveeventbus:0.0.2'
 ```
 
 ## 前言
