@@ -3,11 +3,8 @@ package com.lwjlol.liveeventbus
 import android.os.Looper
 import androidx.annotation.MainThread
 import androidx.collection.LruCache
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
-import androidx.lifecycle.OnLifecycleEvent
 
 class LiveEventBus private constructor() {
   private val liveDataMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
@@ -92,9 +89,6 @@ class LiveEventBus private constructor() {
       check(liveData.sticky == sticky) {
         "liveData has different sticky state to ${clazz.simpleName}!"
       }
-      owner.lifecycle.addObserver(
-          OnDestroyLifecycleObserver(liveData, owner::class.simpleName ?: "")
-      )
       liveData.observe(owner, observer)
     }
 
@@ -113,8 +107,7 @@ class LiveEventBus private constructor() {
       val liveData =
         (liveDataMap.get(clazz) ?: ifProcessorMapGetNull(sticky)) as EventLiveData<T>
       val key = owner::class.simpleName ?: ""
-      owner.lifecycle.addObserver(OnDestroyLifecycleObserver(liveData, key))
-      liveData.observeForever(key, observer)
+      liveData.observeForever(owner, key, observer)
     }
 
     fun observe(
@@ -140,18 +133,6 @@ class LiveEventBus private constructor() {
     fun observeSticky(
       owner: LifecycleOwner,
       observer: Observer<T>
-    ) =
-      observe(owner, true, observer)
-  }
-
-  class OnDestroyLifecycleObserver<T>(
-    private val livaData: EventLiveData<T>,
-    private val key: String
-  ) : LifecycleObserver {
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    fun onDestroy() {
-      livaData.onClear(key)
-    }
+    ) = observe(owner, true, observer)
   }
 }

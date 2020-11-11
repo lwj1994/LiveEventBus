@@ -1,9 +1,12 @@
 package com.lwjlol.liveeventbus
 
 import androidx.collection.ArrayMap
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import androidx.lifecycle.OnLifecycleEvent
 
 /**
  * @param sticky indicate that event is a sticky event
@@ -14,7 +17,6 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
   private var isObservedMap = ArrayMap<String, Boolean>(16)
 
   override fun setValue(value: T) {
-
     for (item in tempValueMap) {
       // 跳过非粘性还没注册的组件
       if (isObservedMap[item.key] != true && !sticky) {
@@ -37,6 +39,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     key: String = owner::class.simpleName ?: "",
     observer: Observer<in T>
   ) {
+    owner.lifecycle.addObserver(OnDestroyLifecycleObserver(this, key))
     isObservedMap[key] = true
     if (!sticky) {
       tempValueMap[key] = UNSET
@@ -53,20 +56,21 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
   }
 
   override fun observeForever(observer: Observer<in T>) {
-    observeForever("", observer)
+    throw IllegalAccessException("")
   }
 
   fun observeForever(
+    owner: LifecycleOwner,
     key: String = "",
     observer: Observer<in T>
   ) {
+    owner.lifecycle.addObserver(OnDestroyLifecycleObserver(this, key))
     isObservedMap[key] = true
     if (!sticky) {
       tempValueMap[key] = UNSET
     } else {
       tempValueMap[key] = value
     }
-
     val foreverObserver = Observer<T> {
       val value = tempValueMap[key]
       if (value == UNSET || it == null) return@Observer
@@ -84,6 +88,17 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     }
     foreverObserverMap[key] = null
     isObservedMap[key] = false
+  }
+
+  private class OnDestroyLifecycleObserver<T>(
+    private val livaData: EventLiveData<T>,
+    private val key: String
+  ) : LifecycleObserver {
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onDestroy() {
+      livaData.onClear(key)
+    }
   }
 
   companion object {
