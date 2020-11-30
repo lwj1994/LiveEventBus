@@ -44,7 +44,9 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     if (!sticky) {
       tempValueMap[key] = UNSET
     } else {
-      tempValueMap[key] = value
+      if (tempValueMap[key] != UNSET) {
+        tempValueMap[key] = value
+      }
     }
     super.observe(owner, Observer {
       val value = tempValueMap[key]
@@ -69,7 +71,9 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     if (!sticky) {
       tempValueMap[key] = UNSET
     } else {
-      tempValueMap[key] = value
+      if (tempValueMap[key] != UNSET) {
+        tempValueMap[key] = value
+      }
     }
     val foreverObserver = Observer<T> {
       val value = tempValueMap[key]
