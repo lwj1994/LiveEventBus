@@ -48,18 +48,31 @@ class LiveEventBus private constructor() {
     sticky: Boolean
   ) {
     if (Looper.myLooper() != Looper.getMainLooper()) {
-      throw IllegalStateException("LiveEventBus only support run on main thread！")
-    }
-    @Suppress("UNCHECKED_CAST") val liveData =
-      ((liveDataMap.get(event::class.java) ?: ifProcessorMapGetNull(
+      synchronized(this) {
+        @Suppress("UNCHECKED_CAST") val liveData =
+          ((liveDataMap.get(event::class.java) ?: ifProcessorMapGetNull(
+            event::class.java,
+            sticky
+          ))) as EventLiveData<Any>
+
+        check(liveData.sticky == sticky) {
+          "liveData has different sticky state to ${event::class.simpleName}!"
+        }
+        liveData.postValue(event)
+      }
+    } else {
+      @Suppress("UNCHECKED_CAST") val liveData =
+        ((liveDataMap.get(event::class.java) ?: ifProcessorMapGetNull(
           event::class.java,
           sticky
-      ))) as EventLiveData<Any>
+        ))) as EventLiveData<Any>
 
-    check(liveData.sticky == sticky) {
-      "liveData has different sticky state to ${event::class.simpleName}!"
+      check(liveData.sticky == sticky) {
+        "liveData has different sticky state to ${event::class.simpleName}!"
+      }
+      liveData.setValue(event)
     }
-    liveData.setValue(event)
+
   }
 
   @MainThread

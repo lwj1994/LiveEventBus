@@ -1,12 +1,8 @@
 package com.lwjlol.liveeventbus
 
+import androidx.annotation.MainThread
 import androidx.collection.ArrayMap
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.*
 
 /**
  * @param sticky indicate that event is a sticky event
@@ -34,6 +30,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     observe(owner, owner::class.simpleName ?: "", observer)
   }
 
+  @MainThread
   fun observe(
     owner: LifecycleOwner,
     key: String = owner::class.simpleName ?: "",
@@ -44,13 +41,17 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     if (!sticky) {
       tempValueMap[key] = UNSET
     } else {
-      if (tempValueMap[key] != UNSET) {
-        tempValueMap[key] = value
+      if (tempValueMap[key] == null) {
+        if (value != null) {
+          tempValueMap[key] = value
+        } else {
+          tempValueMap[key] = UNSET
+        }
       }
     }
     super.observe(owner, Observer {
       val value = tempValueMap[key]
-      if (value == UNSET || it == null) return@Observer
+      if (value == UNSET || value == null || it == null) return@Observer
       @Suppress("UNCHECKED_CAST")
       observer.onChanged(value as T)
       tempValueMap[key] = UNSET
@@ -58,9 +59,10 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
   }
 
   override fun observeForever(observer: Observer<in T>) {
-    throw IllegalAccessException("")
+    throw IllegalAccessException("use observeForever(owner: LifecycleOwner, key: String, observer: Observer)")
   }
 
+  @MainThread
   fun observeForever(
     owner: LifecycleOwner,
     key: String = "",
@@ -71,13 +73,17 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     if (!sticky) {
       tempValueMap[key] = UNSET
     } else {
-      if (tempValueMap[key] != UNSET) {
-        tempValueMap[key] = value
+      if (tempValueMap[key] == null) {
+        if (value != null) {
+          tempValueMap[key] = value
+        } else {
+          tempValueMap[key] = UNSET
+        }
       }
     }
     val foreverObserver = Observer<T> {
       val value = tempValueMap[key]
-      if (value == UNSET || it == null) return@Observer
+      if (value == UNSET || value == null || it == null) return@Observer
       @Suppress("UNCHECKED_CAST")
       observer.onChanged(value as T)
       tempValueMap[key] = UNSET
