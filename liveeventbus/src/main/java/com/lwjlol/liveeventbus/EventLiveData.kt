@@ -27,13 +27,13 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     owner: LifecycleOwner,
     observer: Observer<in T>
   ) {
-    observe(owner, owner::class.simpleName ?: "", observer)
+    observe(owner, owner::class.qualifiedName ?: "", observer)
   }
 
   @MainThread
   fun observe(
     owner: LifecycleOwner,
-    key: String = owner::class.simpleName ?: "",
+    key: String = owner::class.qualifiedName ?: "",
     observer: Observer<in T>
   ) {
     owner.lifecycle.addObserver(OnDestroyLifecycleObserver(this, key))
@@ -58,14 +58,18 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     })
   }
 
+  @Deprecated("use observeForever(owner: LifecycleOwner, key: String, observer: Observer)",
+    ReplaceWith("", "")
+  )
   override fun observeForever(observer: Observer<in T>) {
-    throw IllegalAccessException("use observeForever(owner: LifecycleOwner, key: String, observer: Observer)")
+    super.observeForever(observer)
+//    throw IllegalAccessException("use observeForever(owner: LifecycleOwner, key: String, observer: Observer)")
   }
 
   @MainThread
   fun observeForever(
     owner: LifecycleOwner,
-    key: String = "",
+    key: String = owner::class.qualifiedName ?: "",
     observer: Observer<in T>
   ) {
     owner.lifecycle.addObserver(OnDestroyLifecycleObserver(this, key))
@@ -96,6 +100,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     foreverObserverMap[key]?.let {
       removeObserver(it)
     }
+    tempValueMap[key] = null
     foreverObserverMap[key] = null
     isObservedMap[key] = false
   }
