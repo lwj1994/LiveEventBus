@@ -34,6 +34,13 @@ class LiveEventBus private constructor() {
     return Bus(clazz, liveDataMap)
   }
 
+  /**
+   * 清空所有的事件缓存
+   */
+  fun clear() {
+    liveDataMap.evictAll()
+  }
+
   private fun ifProcessorMapGetNull(
     clazz: Class<*>,
     sticky: Boolean
