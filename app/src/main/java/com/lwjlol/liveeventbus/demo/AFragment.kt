@@ -8,6 +8,14 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 
 class AFragment:Fragment() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val viewModel = ViewModelUtil.getActivityViewModel(this, AViewModel::class.java)
+        viewModel.liveData.observe(this) {
+
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -21,9 +29,6 @@ class AFragment:Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val viewModel = ViewModelUtil.getActivityViewModel(this,AViewModel::class.java)
-        viewModel.liveData.observe(this){
 
-        }
     }
 }

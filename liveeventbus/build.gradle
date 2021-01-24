@@ -4,7 +4,7 @@ plugins {
 }
 
 ext {
-  libVersion = "0.0.7"
+  libVersion = "0.0.8"
   groupId = "com.lwjlol"
   artifactId = "liveeventbus"
   pkg_name = "LiveEventBus"
