@@ -8,17 +8,21 @@ import androidx.lifecycle.*
  * @param sticky indicate that event is a sticky event
  */
 class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
-    private val tempValueMap = ArrayMap<String, Any>(16)
-    private val foreverObserverMap = ArrayMap<String, Observer<T>>(16)
-    private var isObservedMap = ArrayMap<String, Boolean>(16)
+    private val tempValueMap = ArrayMap<String, Any>(2)
+    private val foreverObserverMap = ArrayMap<String, Observer<T>>(2)
+    private var isObservedMap = ArrayMap<String, Boolean>(2)
 
-    override fun setValue(value: T) {
+    override fun setValue(value: T?) {
         for (item in tempValueMap) {
-            // 跳过非粘性还没注册的组件
-            if (isObservedMap[item.key] != true && !sticky) {
-                continue
+            if (value == null) {
+                item.setValue(UNSET)
+            } else {
+                // 跳过非粘性还没注册的组件
+                if (isObservedMap[item.key] != true && !sticky) {
+                    continue
+                }
+                item.setValue(value)
             }
-            item.setValue(value)
         }
         super.setValue(value)
     }
@@ -28,6 +32,16 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         observer: Observer<in T>
     ) {
         observe(owner, "${owner::class.qualifiedName}-$owner", observer)
+    }
+
+    @MainThread
+    override fun observeForever(observer: Observer<in T>) {
+        observeForever(null, observer.toString(), observer)
+    }
+
+    override fun removeObserver(observer: Observer<in T>) {
+        super.removeObserver(observer)
+        onClear(observer.toString())
     }
 
     @Deprecated("use observe(owner,observer)")
@@ -59,22 +73,14 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         })
     }
 
-    @Deprecated(
-        "use observeForever(owner: LifecycleOwner, observer: Observer)",
-        ReplaceWith("", "")
-    )
-    override fun observeForever(observer: Observer<in T>) {
-        super.observeForever(observer)
-    }
-
     @Deprecated("use observeForever(owner,observer)")
     @MainThread
     fun observeForever(
-        owner: LifecycleOwner,
-        key: String = "${owner::class.qualifiedName}-$owner",
+        owner: LifecycleOwner?,
+        key: String = if (owner == null) "" else "${owner::class.qualifiedName}-$owner",
         observer: Observer<in T>
     ) {
-        owner.lifecycle.addObserver(OnDestroyLifecycleObserver(this, key))
+        owner?.lifecycle?.addObserver(OnDestroyLifecycleObserver(this, key))
         isObservedMap[key] = true
         if (!sticky) {
             tempValueMap[key] = UNSET
