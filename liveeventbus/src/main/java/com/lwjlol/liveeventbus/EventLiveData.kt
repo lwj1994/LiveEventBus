@@ -41,7 +41,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
 
     override fun removeObserver(observer: Observer<in T>) {
         super.removeObserver(observer)
-        onClear(observer.toString())
+        reset(observer.toString())
     }
 
     @Deprecated("use observe(owner,observer)")
@@ -192,6 +192,12 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
 
         val address = super.toString()
         return "$address:\n$sb"
+    }
+
+    private fun reset(key: String) {
+        tempValueMap[key] = null
+        foreverObserverMap[key] = null
+        isObservedMap[key] = false
     }
 
     companion object {
