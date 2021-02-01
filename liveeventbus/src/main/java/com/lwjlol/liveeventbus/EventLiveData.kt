@@ -119,8 +119,6 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         tempValueMap[key] = null
         foreverObserverMap[key] = null
         isObservedMap[key] = false
-
-        val address = super.toString()
     }
 
     private class OnDestroyLifecycleObserver<T>(
