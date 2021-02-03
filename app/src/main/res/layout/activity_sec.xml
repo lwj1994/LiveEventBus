@@ -16,7 +16,7 @@
         android:id="@+id/send"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="发送粘性消息"
+        android:text="发送消息给MainActivity"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -24,5 +24,5 @@
         android:id="@+id/open"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="打开SecondActivity" />
+        android:text="发送回调给MainActivity" />
 </LinearLayout>

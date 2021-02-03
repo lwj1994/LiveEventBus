@@ -8,21 +8,22 @@ import androidx.lifecycle.*
  * @param sticky indicate that event is a sticky event
  */
 class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
-    private val tempValueMap = ArrayMap<String, Any>(2)
+    private val tempValueMap = ArrayMap<String, Any?>(2)
     private val foreverObserverMap = ArrayMap<String, Observer<T>>(2)
     private var isObservedMap = ArrayMap<String, Boolean>(2)
 
+    @MainThread
+    fun call() {
+        value = null
+    }
+
     override fun setValue(value: T?) {
         for (item in tempValueMap) {
-            if (value == null) {
-                item.setValue(UNSET)
-            } else {
-                // 跳过非粘性还没注册的组件
-                if (isObservedMap[item.key] != true && !sticky) {
-                    continue
-                }
-                item.setValue(value)
+            // 跳过非粘性还没注册的组件
+            if (isObservedMap[item.key] != true && !sticky) {
+                continue
             }
+            item.setValue(value ?: NULL)
         }
         super.setValue(value)
     }
@@ -33,6 +34,43 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     ) {
         observe(owner, "${owner::class.qualifiedName}-$owner", observer)
     }
+
+    inline fun observeCall(owner: LifecycleOwner, crossinline onCall: (() -> Unit)) {
+        observe(owner, Observer {
+            onCall()
+        })
+    }
+
+    inline fun observeCallForever(owner: LifecycleOwner, crossinline onCall: (() -> Unit)) {
+        observeForever(owner, {
+            onCall()
+        })
+    }
+
+    inline fun observeNonNull(owner: LifecycleOwner, crossinline block: ((T) -> Unit)) {
+        observe(owner, Observer {
+            block(it ?: return@Observer)
+        })
+    }
+
+    inline fun observeForeverNonNull(owner: LifecycleOwner, crossinline block: ((T) -> Unit)) {
+        observe(owner, Observer {
+            block(it ?: return@Observer)
+        })
+    }
+
+    inline fun observe(owner: LifecycleOwner, crossinline block: ((T?) -> Unit)) {
+        observe(owner, Observer {
+            block(it)
+        })
+    }
+
+    inline fun observeForever(owner: LifecycleOwner, crossinline block: ((T?) -> Unit)) {
+        observeForever(owner, Observer {
+            block(it)
+        })
+    }
+
 
     @MainThread
     override fun observeForever(observer: Observer<in T>) {
@@ -51,26 +89,8 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         key: String = "${owner::class.qualifiedName}-$owner",
         observer: Observer<in T>
     ) {
-        owner.lifecycle.addObserver(OnDestroyLifecycleObserver(this, key))
-        isObservedMap[key] = true
-        if (!sticky) {
-            tempValueMap[key] = UNSET
-        } else {
-            if (tempValueMap[key] == null) {
-                if (value != null) {
-                    tempValueMap[key] = value
-                } else {
-                    tempValueMap[key] = UNSET
-                }
-            }
-        }
-        super.observe(owner, Observer {
-            val value = tempValueMap[key]
-            if (value == UNSET || value == null || it == null) return@Observer
-            @Suppress("UNCHECKED_CAST")
-            observer.onChanged(value as T)
-            tempValueMap[key] = UNSET
-        })
+        onObserve(owner, key)
+        super.observe(owner, getObserverWrapper(key, observer))
     }
 
     @Deprecated("use observeForever(owner,observer)")
@@ -80,28 +100,33 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         key: String = if (owner == null) "" else "${owner::class.qualifiedName}-$owner",
         observer: Observer<in T>
     ) {
+        onObserve(owner, key)
+        super.observeForever(getObserverWrapper(key, observer).also {
+            foreverObserverMap[key] = it
+        })
+    }
+
+    private fun onObserve(
+        owner: LifecycleOwner?,
+        key: String
+    ) {
         owner?.lifecycle?.addObserver(OnDestroyLifecycleObserver(this, key))
         isObservedMap[key] = true
-        if (!sticky) {
-            tempValueMap[key] = UNSET
-        } else {
-            if (tempValueMap[key] == null) {
-                if (value != null) {
-                    tempValueMap[key] = value
-                } else {
-                    tempValueMap[key] = UNSET
-                }
-            }
+        if (tempValueMap[key] == null) {
+            tempValueMap[key] = if (!sticky || value == null) UNSET else value
         }
-        val foreverObserver = Observer<T> {
-            val value = tempValueMap[key]
-            if (value == UNSET || value == null || it == null) return@Observer
+    }
+
+    private fun getObserverWrapper(
+        key: String,
+        observer: Observer<in T>
+    ): Observer<T> {
+        return Observer<T> {
+            if (tempValueMap[key] === UNSET) return@Observer
             @Suppress("UNCHECKED_CAST")
             observer.onChanged(value as T)
             tempValueMap[key] = UNSET
         }
-        foreverObserverMap[key] = foreverObserver
-        super.observeForever(foreverObserver)
     }
 
     @MainThread
@@ -109,7 +134,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         owner: LifecycleOwner,
         observer: Observer<in T>
     ) {
-        observe(owner, "${owner::class.qualifiedName}-$owner", observer)
+        observeForever(owner, "${owner::class.qualifiedName}-$owner", observer)
     }
 
     fun onClear(key: String) {
@@ -141,7 +166,9 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
                 if (index == 0) {
                     sb.append("{")
                 }
-                sb.append(key).append(":").append(tempValueMap[key])
+                sb.append(key)
+                    .append(":")
+                    .append(tempValueMap[key])
                 if (index == tempValueMap.keys.size - 1) {
                     sb.append("}")
                 } else {
@@ -161,7 +188,9 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
                 if (index == 0) {
                     sb.append("{")
                 }
-                sb.append(key).append(":").append(foreverObserverMap[key])
+                sb.append(key)
+                    .append(":")
+                    .append(foreverObserverMap[key])
                 if (index == foreverObserverMap.keys.size - 1) {
                     sb.append("}")
                 } else {
@@ -178,7 +207,9 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
                 if (index == 0) {
                     sb.append("{")
                 }
-                sb.append(key).append(":").append(isObservedMap[key])
+                sb.append(key)
+                    .append(":")
+                    .append(isObservedMap[key])
                 if (index == isObservedMap.keys.size - 1) {
                     sb.append("}")
                 } else {
@@ -186,7 +217,6 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
                 }
             }
         }
-
 
         val address = super.toString()
         return "$address:\n$sb"
@@ -200,6 +230,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
 
     companion object {
         private val UNSET = Any()
+        private val NULL = Any()
         private const val TAG = "EventLiveData"
     }
 }
