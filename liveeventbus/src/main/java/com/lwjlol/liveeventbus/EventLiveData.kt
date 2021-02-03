@@ -32,7 +32,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         owner: LifecycleOwner,
         observer: Observer<in T>
     ) {
-        observe(owner, "${owner::class.qualifiedName}-$owner", observer)
+        observe(owner, getKey(owner), observer)
     }
 
     inline fun observeCall(owner: LifecycleOwner, crossinline onCall: (() -> Unit)) {
@@ -86,7 +86,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     @MainThread
     fun observe(
         owner: LifecycleOwner,
-        key: String = "${owner::class.qualifiedName}-$owner",
+        key: String = getKey(owner),
         observer: Observer<in T>
     ) {
         onObserve(owner, key)
@@ -97,7 +97,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     @MainThread
     fun observeForever(
         owner: LifecycleOwner?,
-        key: String = if (owner == null) "" else "${owner::class.qualifiedName}-$owner",
+        key: String = if (owner == null) "" else getKey(owner),
         observer: Observer<in T>
     ) {
         onObserve(owner, key)
@@ -134,8 +134,10 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         owner: LifecycleOwner,
         observer: Observer<in T>
     ) {
-        observeForever(owner, "${owner::class.qualifiedName}-$owner", observer)
+        observeForever(owner, getKey(owner), observer)
     }
+
+    private fun getKey(owner: LifecycleOwner) = "${owner::class.qualifiedName}-$owner"
 
     fun onClear(key: String) {
         foreverObserverMap[key]?.let {
