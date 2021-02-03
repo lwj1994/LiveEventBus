@@ -42,7 +42,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     }
 
     inline fun observeCallForever(owner: LifecycleOwner, crossinline onCall: (() -> Unit)) {
-        observeForever(owner, {
+        observeForever(owner, Observer {
             onCall()
         })
     }
