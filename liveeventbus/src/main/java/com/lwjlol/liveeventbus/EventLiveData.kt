@@ -6,6 +6,7 @@ import androidx.lifecycle.*
 
 /**
  * @param sticky indicate that event is a sticky event
+ *
  */
 class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     private val tempValueMap = ArrayMap<String, Any?>(2)
@@ -35,38 +36,62 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         observe(owner, getKey(owner), observer)
     }
 
-    inline fun observeCall(owner: LifecycleOwner, crossinline onCall: (() -> Unit)) {
-        observe(owner, Observer {
+    inline fun observeCall(
+        owner: LifecycleOwner,
+        key: String? = null,
+        crossinline onCall: (() -> Unit)
+    ) {
+        observe(owner, key ?: getKey(owner), {
             onCall()
         })
     }
 
-    inline fun observeCallForever(owner: LifecycleOwner, crossinline onCall: (() -> Unit)) {
-        observeForever(owner, Observer {
+    inline fun observeNonNull(
+        owner: LifecycleOwner,
+        key: String? = null,
+        crossinline block: ((T) -> Unit)
+    ) {
+        observe(owner, key ?: getKey(owner), Observer {
+            block(it ?: return@Observer)
+        })
+    }
+
+    inline fun observeCallForever(
+        owner: LifecycleOwner,
+        key: String? = null,
+        crossinline onCall: (() -> Unit)
+    ) {
+        observeForever(owner, key ?: getKey(owner), {
             onCall()
         })
     }
 
-    inline fun observeNonNull(owner: LifecycleOwner, crossinline block: ((T) -> Unit)) {
-        observe(owner, Observer {
+    inline fun observeForeverNonNull(
+        owner: LifecycleOwner,
+        key: String? = null,
+        crossinline block: ((T) -> Unit)
+    ) {
+        observeForever(owner, key ?: getKey(owner), Observer {
             block(it ?: return@Observer)
         })
     }
 
-    inline fun observeForeverNonNull(owner: LifecycleOwner, crossinline block: ((T) -> Unit)) {
-        observe(owner, Observer {
-            block(it ?: return@Observer)
-        })
-    }
-
-    inline fun observe(owner: LifecycleOwner, crossinline block: ((T?) -> Unit)) {
-        observe(owner, Observer {
+    inline fun observe(
+        owner: LifecycleOwner,
+        key: String? = null,
+        crossinline block: ((T?) -> Unit)
+    ) {
+        observe(owner, key ?: getKey(owner), Observer {
             block(it)
         })
     }
 
-    inline fun observeForever(owner: LifecycleOwner, crossinline block: ((T?) -> Unit)) {
-        observeForever(owner, Observer {
+    inline fun observeForever(
+        owner: LifecycleOwner,
+        key: String? = null,
+        crossinline block: ((T?) -> Unit)
+    ) {
+        observeForever(owner, key ?: getKey(owner), Observer {
             block(it)
         })
     }
@@ -82,7 +107,6 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         reset(observer.toString())
     }
 
-    @Deprecated("use observe(owner,observer)")
     @MainThread
     fun observe(
         owner: LifecycleOwner,
@@ -93,7 +117,6 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         super.observe(owner, getObserverWrapper(key, observer))
     }
 
-    @Deprecated("use observeForever(owner,observer)")
     @MainThread
     fun observeForever(
         owner: LifecycleOwner?,
@@ -137,7 +160,7 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         observeForever(owner, getKey(owner), observer)
     }
 
-    private fun getKey(owner: LifecycleOwner) = "${owner::class.qualifiedName}-$owner"
+    fun getKey(owner: LifecycleOwner) = "${owner::class.qualifiedName}-$owner"
 
     fun onClear(key: String) {
         foreverObserverMap[key]?.let {
