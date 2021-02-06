@@ -160,7 +160,9 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         observeForever(owner, getKey(owner), observer)
     }
 
-    fun getKey(owner: LifecycleOwner) = "${owner::class.qualifiedName}-$owner"
+    fun getKey(owner: LifecycleOwner) =
+        if (sticky) "${owner::class.qualifiedName}" else "${owner::class.qualifiedName}-$owner"
+
 
     fun onClear(key: String) {
         foreverObserverMap[key]?.let {
