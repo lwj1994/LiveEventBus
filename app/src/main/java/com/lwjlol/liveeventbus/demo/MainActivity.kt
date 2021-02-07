@@ -20,8 +20,10 @@ class MainActivity : AppCompatActivity() {
 
         LiveEventBus.setInitMaxEventSize(200)
         findViewById<View>(R.id.send).setOnClickListener {
-            liveData.call()
             LiveEventBus.instance.sendSticky(FirstEvent("event from MainActivity"))
+        }
+        findViewById<View>(R.id.call).setOnClickListener {
+            liveData.call()
         }
         findViewById<View>(R.id.open).setOnClickListener {
             startActivity(Intent(this, SecondActivity::class.java))

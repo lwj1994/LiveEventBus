@@ -141,7 +141,11 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         owner?.lifecycle?.addObserver(OnDestroyLifecycleObserver(this, key))
         isObservedMap[key] = true
         if (tempValueMap[key] == null) {
-            tempValueMap[key] = if (!sticky || value == null) UNSET else value
+            tempValueMap[key] = if (!sticky || value == null) {
+                UNSET
+            } else {
+                value
+            }
         }
     }
 
@@ -173,7 +177,6 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         foreverObserverMap[key]?.let {
             removeObserver(it)
         }
-        tempValueMap[key] = null
         foreverObserverMap[key] = null
         isObservedMap[key] = false
     }
