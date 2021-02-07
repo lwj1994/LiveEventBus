@@ -29,6 +29,21 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         super.setValue(value)
     }
 
+    /**
+     * @param owner
+     * @param key an event only can be consumed once by same key
+     * @param observer
+     */
+    @MainThread
+    fun observe(
+        owner: LifecycleOwner,
+        key: String = getKey(owner),
+        observer: Observer<in T>
+    ) {
+        onObserve(owner, key)
+        super.observe(owner, getObserverWrapper(key, observer))
+    }
+
     override fun observe(
         owner: LifecycleOwner,
         observer: Observer<in T>
@@ -36,13 +51,13 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         observe(owner, getKey(owner), observer)
     }
 
-    inline fun observeCall(
+    inline fun observe(
         owner: LifecycleOwner,
         key: String? = null,
-        crossinline onCall: (() -> Unit)
+        crossinline block: ((T?) -> Unit)
     ) {
-        observe(owner, key ?: getKey(owner), {
-            onCall()
+        observe(owner, key ?: getKey(owner), Observer {
+            block(it)
         })
     }
 
@@ -56,6 +71,16 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         })
     }
 
+    inline fun observeCall(
+        owner: LifecycleOwner,
+        key: String? = null,
+        crossinline onCall: (() -> Unit)
+    ) {
+        observe(owner, key ?: getKey(owner), {
+            onCall()
+        })
+    }
+
     inline fun observeCallForever(
         owner: LifecycleOwner,
         key: String? = null,
@@ -63,6 +88,34 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
     ) {
         observeForever(owner, key ?: getKey(owner), {
             onCall()
+        })
+    }
+
+    @MainThread
+    fun observeForever(
+        owner: LifecycleOwner?,
+        key: String = if (owner == null) "" else getKey(owner),
+        observer: Observer<in T>
+    ) {
+        onObserve(owner, key)
+        super.observeForever(getObserverWrapper(key, observer).also {
+            foreverObserverMap[key] = it
+        })
+    }
+
+
+    @MainThread
+    override fun observeForever(observer: Observer<in T>) {
+        observeForever(null, observer.toString(), observer)
+    }
+
+    inline fun observeForever(
+        owner: LifecycleOwner,
+        key: String? = null,
+        crossinline block: ((T?) -> Unit)
+    ) {
+        observeForever(owner, key ?: getKey(owner), Observer {
+            block(it)
         })
     }
 
@@ -76,57 +129,9 @@ class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
         })
     }
 
-    inline fun observe(
-        owner: LifecycleOwner,
-        key: String? = null,
-        crossinline block: ((T?) -> Unit)
-    ) {
-        observe(owner, key ?: getKey(owner), Observer {
-            block(it)
-        })
-    }
-
-    inline fun observeForever(
-        owner: LifecycleOwner,
-        key: String? = null,
-        crossinline block: ((T?) -> Unit)
-    ) {
-        observeForever(owner, key ?: getKey(owner), Observer {
-            block(it)
-        })
-    }
-
-
-    @MainThread
-    override fun observeForever(observer: Observer<in T>) {
-        observeForever(null, observer.toString(), observer)
-    }
-
     override fun removeObserver(observer: Observer<in T>) {
         super.removeObserver(observer)
         reset(observer.toString())
-    }
-
-    @MainThread
-    fun observe(
-        owner: LifecycleOwner,
-        key: String = getKey(owner),
-        observer: Observer<in T>
-    ) {
-        onObserve(owner, key)
-        super.observe(owner, getObserverWrapper(key, observer))
-    }
-
-    @MainThread
-    fun observeForever(
-        owner: LifecycleOwner?,
-        key: String = if (owner == null) "" else getKey(owner),
-        observer: Observer<in T>
-    ) {
-        onObserve(owner, key)
-        super.observeForever(getObserverWrapper(key, observer).also {
-            foreverObserverMap[key] = it
-        })
     }
 
     private fun onObserve(
