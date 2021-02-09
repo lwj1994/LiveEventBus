@@ -18,7 +18,6 @@ class MainActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.text).text = "call"
         }
 
-        LiveEventBus.setInitMaxEventSize(200)
         findViewById<View>(R.id.send).setOnClickListener {
             LiveEventBus.instance.sendSticky(FirstEvent("event from MainActivity"))
         }

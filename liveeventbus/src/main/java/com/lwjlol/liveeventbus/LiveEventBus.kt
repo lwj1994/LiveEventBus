@@ -38,7 +38,11 @@ class LiveEventBus private constructor() {
         sticky: Boolean
     ): EventLiveData<Any> {
         val liveData = EventLiveData<Any>(sticky)
-        eventMap.put(clazz, liveData)
+        if (sticky) {
+            stickyEventMap[clazz] = liveData
+        } else {
+            eventMap.put(clazz, liveData)
+        }
         return liveData
     }
 
