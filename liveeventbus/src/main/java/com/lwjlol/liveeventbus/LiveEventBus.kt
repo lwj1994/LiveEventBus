@@ -2,43 +2,35 @@ package com.lwjlol.liveeventbus
 
 import android.os.Looper
 import androidx.annotation.MainThread
+import androidx.collection.ArrayMap
 import androidx.collection.LruCache
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 
 class LiveEventBus private constructor() {
-    private val liveDataMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
+    private val eventMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
+    private val stickyEventMap = ArrayMap<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
 
-    var maxEventSize: Int
-        get() = liveDataMap.maxSize()
-        set(maxSize) {
-            liveDataMap.resize(maxSize)
-        }
 
     companion object {
-        @JvmStatic
-        private var DEFAULT_MAX_EVENT = 20
+        private const val DEFAULT_MAX_EVENT = 20
 
         val instance = Singleton.instance
-
-        @JvmStatic
-        fun setInitMaxEventSize(maxSize: Int) {
-            DEFAULT_MAX_EVENT = maxSize
-        }
     }
 
     /**
      * @param clazz 为了类型安全, 指定事件 type class
      */
     fun <T> on(clazz: Class<T>): Bus<T> {
-        return Bus(clazz, liveDataMap)
+        return Bus(clazz, eventMap, stickyEventMap)
     }
 
     /**
      * 清空所有的事件缓存
      */
     fun clear() {
-        liveDataMap.evictAll()
+        stickyEventMap.clear()
+        eventMap.evictAll()
     }
 
     private fun ifProcessorMapGetNull(
@@ -46,7 +38,7 @@ class LiveEventBus private constructor() {
         sticky: Boolean
     ): EventLiveData<Any> {
         val liveData = EventLiveData<Any>(sticky)
-        liveDataMap.put(clazz, liveData)
+        eventMap.put(clazz, liveData)
         return liveData
     }
 
@@ -57,7 +49,7 @@ class LiveEventBus private constructor() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             synchronized(this) {
                 @Suppress("UNCHECKED_CAST") val liveData =
-                    ((liveDataMap.get(event::class.java) ?: ifProcessorMapGetNull(
+                    ((eventMap.get(event::class.java) ?: ifProcessorMapGetNull(
                         event::class.java,
                         sticky
                     ))) as EventLiveData<Any>
@@ -69,7 +61,7 @@ class LiveEventBus private constructor() {
             }
         } else {
             @Suppress("UNCHECKED_CAST") val liveData =
-                ((liveDataMap.get(event::class.java) ?: ifProcessorMapGetNull(
+                ((eventMap.get(event::class.java) ?: ifProcessorMapGetNull(
                     event::class.java,
                     sticky
                 ))) as EventLiveData<Any>
@@ -94,7 +86,8 @@ class LiveEventBus private constructor() {
 
     class Bus<T>(
         private val clazz: Class<T>,
-        private val liveDataMap: LruCache<Class<*>, EventLiveData<*>>
+        private val liveDataMap: LruCache<Class<*>, EventLiveData<*>>,
+        private val stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
     ) {
         private fun <T> observe(
             owner: LifecycleOwner,
@@ -103,10 +96,11 @@ class LiveEventBus private constructor() {
             observer: Observer<T>
         ) {
             @Suppress("UNCHECKED_CAST")
-            val liveData =
-                (liveDataMap.get(clazz) ?: ifProcessorMapGetNull(
-                    sticky
-                )) as EventLiveData<T>
+            val liveData = (if (sticky) {
+                stickyEventMap[clazz]
+            } else {
+                liveDataMap.get(clazz)
+            } ?: ifProcessorMapGetNull(sticky)) as EventLiveData<T>
             check(liveData.sticky == sticky) {
                 "liveData has different sticky state to ${clazz.simpleName}!"
             }
@@ -115,9 +109,14 @@ class LiveEventBus private constructor() {
 
         private fun ifProcessorMapGetNull(sticky: Boolean): EventLiveData<T> {
             val liveData = EventLiveData<T>(sticky)
-            liveDataMap.put(clazz, liveData)
+            if (sticky) {
+                stickyEventMap[clazz] = liveData
+            } else {
+                liveDataMap.put(clazz, liveData)
+            }
             return liveData
         }
+
 
         private fun <T> observeForever(
             owner: LifecycleOwner,
@@ -127,7 +126,11 @@ class LiveEventBus private constructor() {
         ) {
             @Suppress("UNCHECKED_CAST")
             val liveData =
-                (liveDataMap.get(clazz) ?: ifProcessorMapGetNull(sticky)) as EventLiveData<T>
+                (if (sticky) {
+                    stickyEventMap[clazz]
+                } else {
+                    liveDataMap.get(clazz)
+                } ?: ifProcessorMapGetNull(sticky)) as EventLiveData<T>
             liveData.observeForever(owner, key ?: liveData.getKey(owner), observer)
         }
 
