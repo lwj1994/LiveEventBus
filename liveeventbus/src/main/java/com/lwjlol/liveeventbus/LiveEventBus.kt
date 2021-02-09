@@ -53,7 +53,11 @@ class LiveEventBus private constructor() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             synchronized(this) {
                 @Suppress("UNCHECKED_CAST") val liveData =
-                    ((eventMap.get(event::class.java) ?: ifProcessorMapGetNull(
+                    ((if (sticky) {
+                        stickyEventMap[event::class.java]
+                    } else {
+                        eventMap.get(event::class.java)
+                    } ?: ifProcessorMapGetNull(
                         event::class.java,
                         sticky
                     ))) as EventLiveData<Any>
@@ -65,10 +69,14 @@ class LiveEventBus private constructor() {
             }
         } else {
             @Suppress("UNCHECKED_CAST") val liveData =
-                ((eventMap.get(event::class.java) ?: ifProcessorMapGetNull(
+                (if (sticky) {
+                    stickyEventMap[event::class.java]
+                } else {
+                    eventMap.get(event::class.java)
+                } ?: ifProcessorMapGetNull(
                     event::class.java,
                     sticky
-                ))) as EventLiveData<Any>
+                )) as EventLiveData<Any>
 
             check(liveData.sticky == sticky) {
                 "liveData has different sticky state to ${event::class.simpleName}!"
