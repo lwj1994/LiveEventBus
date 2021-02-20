@@ -1,8 +1,28 @@
 
-[ ![Download](https://api.bintray.com/packages/wenchieh/maven/LiveEventBus/images/download.svg) ](https://bintray.com/wenchieh/maven/LiveEventBus/_latestVersion)
+[![](https://jitpack.io/v/lwj1994/LiveEventBus.svg)](https://jitpack.io/#lwj1994/LiveEventBus)
+
+## How to
+
+To get a Git project into your build:
+### Step 1. Add the JitPack repository to your build file
+
+Add it in your root build.gradle at the end of repositories:
 ```
-implementation 'com.lwjlol:liveeventbus:${latest_version}'
+	allprojects {
+		repositories {
+			...
+			maven { url 'https://jitpack.io' }
+		}
+	}
 ```
+
+### Step 2. Add the dependency
+```
+	dependencies {
+	        implementation 'com.github.lwj1994:LiveEventBus:0.2.0'
+	}
+```
+
 
 ## 前言
 本库是使用 LiveData 实现的 EventBus，目前网上很火的美团方案实现的 EventBus 对 LiveData 源码入侵太严重，我觉得太不优雅了。实现一个 EventBus 其实很简单，`LiveEventBus` 就是一种优雅的实现方式，没有修改任何源码，也没有任何反射。
