@@ -3,6 +3,7 @@ plugins {
   id 'kotlin-android'
 }
 
+
 ext {
   libVersion = "0.2.2"
   groupId = "com.lwjlol"
@@ -22,7 +23,7 @@ ext {
 
 android {
   compileSdkVersion 30
-  buildToolsVersion "30.0.2"
+  buildToolsVersion "30.0.3"
 
   defaultConfig {
     minSdkVersion 21
@@ -54,9 +55,7 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   implementation 'androidx.appcompat:appcompat:1.2.0'
 
-  testImplementation 'junit:junit:4.+'
+  testImplementation 'junit:junit:4.13.2'
   androidTestImplementation 'androidx.test.ext:junit:1.1.2'
   androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 }
-
-apply from: "../deploy.gradle"
