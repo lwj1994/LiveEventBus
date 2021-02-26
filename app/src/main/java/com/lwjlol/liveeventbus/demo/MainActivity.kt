@@ -9,9 +9,14 @@ import com.lwjlol.liveeventbus.EventLiveData
 import com.lwjlol.liveeventbus.LiveEventBus
 
 class MainActivity : AppCompatActivity() {
+    val viewModel by lazy {
+        ViewModelUtil.getViewModel(this, AViewModel::class.java)
+    }
+
     val liveData = EventLiveData<String>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_main)
 
         liveData.observeCall(this) {
