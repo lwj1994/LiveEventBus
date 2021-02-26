@@ -93,9 +93,9 @@ LiveEventBus.instance.on(ForeverEvent::class.java).observeForeverSticky(this) {
 ```
 
 ## 原理
-LiveEventBus 主要内部实现依赖于 EventLiveData， EventLiveData 继承自 LiveData，可以单独拿出来使用。
+`LiveEventBus` 主要内部实现依赖于 `EventLiveData`， `EventLiveData` 继承自 LiveData，可以单独拿出来使用。
 
-避免在 onActive 时响应回调的原理, 重写了 observe，给 `LifecycleOwner` 配上一个 key 参数。
+避免在 onActive 时响应回调的原理很简单，重写了 observe，给 `LifecycleOwner` 配上一个 key 参数。
 * 判断当前的 key 是否已经注册过来实现是否是粘性
 * 为每一个 key 单独保存 value，消费完一个事件立马置为 UNSET 状态，判断当前的 key 是否是 UNSET 状态觉得是否响应回调
 ```
@@ -106,3 +106,7 @@ fun observe(
     )
 ```
 
+key 的默认实现是当前 `LifecycleOwner` 的全路径类名，可以根据实际需求传入 key：
+```
+fun getKey(owner: LifecycleOwner) = "${owner::class.qualifiedName}"
+```
