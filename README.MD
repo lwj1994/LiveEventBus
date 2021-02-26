@@ -97,7 +97,7 @@ LiveEventBus.instance.on(ForeverEvent::class.java).observeForeverSticky(this) {
 
 避免在 onActive 时响应回调的原理很简单，重写了 observe，给 `LifecycleOwner` 配上一个 key 参数。
 * 判断当前的 key 是否已经注册过来实现是否是粘性
-* 为每一个 key 单独保存 value，消费完一个事件立马置为 UNSET 状态，判断当前的 key 是否是 UNSET 状态觉得是否响应回调
+* 为每一个 key 单独保存 value，消费完一个事件立马置为 UNSET 状态，判断当前的 key 是否是 UNSET 状态决定是否响应回调
 ```
 fun observe(
         owner: LifecycleOwner,
