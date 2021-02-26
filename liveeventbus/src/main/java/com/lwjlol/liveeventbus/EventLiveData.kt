@@ -8,7 +8,7 @@ import androidx.lifecycle.*
  * @param sticky indicate that event is a sticky event
  *
  */
-class EventLiveData<T>(val sticky: Boolean = false) : MutableLiveData<T>() {
+class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private val tempValueMap = ArrayMap<String, Any?>(2)
     private val foreverObserverMap = ArrayMap<String, Observer<T>>(2)
     private var isObservedMap = ArrayMap<String, Boolean>(2)
