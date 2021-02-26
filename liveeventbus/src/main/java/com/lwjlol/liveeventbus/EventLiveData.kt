@@ -1,8 +1,10 @@
 package com.lwjlol.liveeventbus
 
+import android.os.Looper
 import androidx.annotation.MainThread
 import androidx.collection.ArrayMap
 import androidx.lifecycle.*
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * @param sticky indicate that event is a sticky event
@@ -11,14 +13,32 @@ import androidx.lifecycle.*
 class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private val tempValueMap = ArrayMap<String, Any?>(2)
     private val foreverObserverMap = ArrayMap<String, Observer<T>>(2)
+    private val callMap = ArrayMap<String, Int>(2)
     private var isObservedMap = ArrayMap<String, Boolean>(2)
+    private val callCount = AtomicInteger(0)
 
-    @MainThread
+    @Volatile
+    private var isCall: Boolean? = null
+
     fun call() {
-        value = null
+        callCount.incrementAndGet()
+        isCall = true
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            setValueForAll(value)
+            super.setValue(null)
+        } else {
+            setValueForAll(value)
+            super.postValue(null)
+        }
     }
 
     override fun setValue(value: T?) {
+        isCall = false
+        setValueForAll(value)
+        super.setValue(value)
+    }
+
+    private fun setValueForAll(value: T?) {
         for (item in tempValueMap) {
             // 跳过非粘性还没注册的组件
             if (isObservedMap[item.key] != true && !sticky) {
@@ -26,7 +46,6 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
             }
             item.setValue(value ?: NULL)
         }
-        super.setValue(value)
     }
 
     /**
@@ -147,6 +166,20 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
                 value
             }
         }
+
+        // 最后一次是 setValue
+        if (isCall == false && sticky) {
+            if (value == null) {
+                tempValueMap[key] = NULL
+            }
+        }
+
+        // 最后一次是 call 事件
+        if (isCall == true && callCount.get() > 0 && sticky) {
+            if (callMap.getOrDefault(key, 0) < callCount.get()) {
+                tempValueMap[key] = NULL
+            }
+        }
     }
 
     private fun getObserverWrapper(
@@ -157,6 +190,10 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
             if (tempValueMap[key] === UNSET) return@Observer
             @Suppress("UNCHECKED_CAST")
             observer.onChanged(value as T)
+            // 消费完 call 事件就同步进度
+            if (isCall == true && tempValueMap[key] === NULL) {
+                callMap[key] = callCount.get()
+            }
             tempValueMap[key] = UNSET
         }
     }
