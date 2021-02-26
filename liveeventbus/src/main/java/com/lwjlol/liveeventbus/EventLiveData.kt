@@ -41,7 +41,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private fun setValueForAll(value: T?) {
         for (item in tempValueMap) {
             // 跳过非粘性还没注册的组件
-            if (isObservedMap[item.key] != true && !sticky) {
+            if (isObservedMap.getOrDefault(item.key, false) != true && !sticky) {
                 continue
             }
             item.setValue(value ?: NULL)
@@ -213,7 +213,8 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
             removeObserver(it)
         }
         foreverObserverMap[key] = null
-        isObservedMap[key] = false
+        isObservedMap[key] = null
+        callMap[key] = null
     }
 
     private class OnDestroyLifecycleObserver<T>(
@@ -295,7 +296,8 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private fun reset(key: String) {
         tempValueMap[key] = null
         foreverObserverMap[key] = null
-        isObservedMap[key] = false
+        isObservedMap[key] = null
+        callMap[key] = null
     }
 
     companion object {
