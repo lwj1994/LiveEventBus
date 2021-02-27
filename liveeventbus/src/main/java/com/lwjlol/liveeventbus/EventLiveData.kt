@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private val tempValueMap = ArrayMap<String, Any?>(2)
-    private val foreverObserverMap = ArrayMap<String, Observer<T>>(2)
     private val callMap = ArrayMap<String, Int>(2)
     private var isObservedMap = ArrayMap<String, Boolean>(2)
     private val callCount = AtomicInteger(0)
@@ -90,60 +89,36 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         })
     }
 
-    inline fun observeCall(
-        owner: LifecycleOwner,
-        key: String? = null,
-        crossinline onCall: (() -> Unit)
-    ) {
-        observe(owner, key ?: getKey(owner), {
-            onCall()
-        })
+    @MainThread
+    override fun observeForever(observer: Observer<in T>) {
+        observeForever(observer.toString(), observer)
     }
 
-    inline fun observeCallForever(
-        owner: LifecycleOwner,
-        key: String? = null,
-        crossinline onCall: (() -> Unit)
-    ) {
-        observeForever(owner, key ?: getKey(owner), {
-            onCall()
-        })
-    }
 
     @MainThread
     fun observeForever(
-        owner: LifecycleOwner?,
-        key: String = if (owner == null) "" else getKey(owner),
+        key: String?,
         observer: Observer<in T>
     ) {
-        onObserve(owner, key)
-        super.observeForever(getObserverWrapper(key, observer).also {
-            foreverObserverMap[key] = it
-        })
-    }
-
-
-    @MainThread
-    override fun observeForever(observer: Observer<in T>) {
-        observeForever(null, observer.toString(), observer)
+        val k = key ?: observer.toString()
+        onObserve(null, k)
+        super.observeForever(getObserverWrapper(k, observer))
     }
 
     inline fun observeForever(
-        owner: LifecycleOwner,
-        key: String? = null,
+        key: String?,
         crossinline block: ((T?) -> Unit)
     ) {
-        observeForever(owner, key ?: getKey(owner), Observer {
+        observeForever(key, Observer {
             block(it)
         })
     }
 
     inline fun observeForeverNonNull(
-        owner: LifecycleOwner,
-        key: String? = null,
+        key: String?,
         crossinline block: ((T) -> Unit)
     ) {
-        observeForever(owner, key ?: getKey(owner), Observer {
+        observeForever(key, Observer {
             block(it ?: return@Observer)
         })
     }
@@ -198,21 +173,9 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         }
     }
 
-    @MainThread
-    fun observeForever(
-        owner: LifecycleOwner,
-        observer: Observer<in T>
-    ) {
-        observeForever(owner, getKey(owner), observer)
-    }
-
     fun getKey(owner: LifecycleOwner) = "${owner::class.qualifiedName}"
 
     fun onClear(key: String) {
-        foreverObserverMap[key]?.let {
-            removeObserver(it)
-        }
-        foreverObserverMap[key] = null
         isObservedMap[key] = null
         callMap[key] = null
     }
@@ -250,26 +213,6 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
             sb.append("{}")
         }
 
-
-        sb.append("\nforeverObserverMap = ")
-        if (foreverObserverMap.keys.isEmpty()) {
-            sb.append("{}")
-        } else {
-            foreverObserverMap.keys.forEachIndexed { index, key ->
-                if (index == 0) {
-                    sb.append("{")
-                }
-                sb.append(key)
-                    .append(":")
-                    .append(foreverObserverMap[key])
-                if (index == foreverObserverMap.keys.size - 1) {
-                    sb.append("}")
-                } else {
-                    sb.append(", ")
-                }
-            }
-        }
-
         sb.append("\nisObservedMap = ")
         if (isObservedMap.isEmpty) {
             sb.append("{}")
@@ -295,7 +238,6 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
 
     private fun reset(key: String) {
         tempValueMap[key] = null
-        foreverObserverMap[key] = null
         isObservedMap[key] = null
         callMap[key] = null
     }

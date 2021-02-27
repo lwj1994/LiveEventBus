@@ -18,9 +18,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-
-        liveData.observeCall(this) {
-            findViewById<TextView>(R.id.text).text = "call"
+//        liveData.value = null
+        liveData.observe(this) {
+            findViewById<TextView>(R.id.text).text = "${it}"
         }
 
         findViewById<View>(R.id.send).setOnClickListener {
@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.call).setOnClickListener {
             liveData.call()
+            liveData.value = null
         }
         findViewById<View>(R.id.open).setOnClickListener {
             startActivity(Intent(this, SecondActivity::class.java))

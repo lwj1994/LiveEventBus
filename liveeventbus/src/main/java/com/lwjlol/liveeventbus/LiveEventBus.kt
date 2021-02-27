@@ -131,7 +131,6 @@ class LiveEventBus private constructor() {
 
 
         private fun <T> observeForever(
-            owner: LifecycleOwner,
             key: String?,
             sticky: Boolean,
             observer: Observer<T>
@@ -143,7 +142,7 @@ class LiveEventBus private constructor() {
                 } else {
                     liveDataMap.get(clazz)
                 } ?: ifProcessorMapGetNull(sticky)) as EventLiveData<T>
-            liveData.observeForever(owner, key ?: liveData.getKey(owner), observer)
+            liveData.observeForever(key, observer)
         }
 
         fun observe(
@@ -157,29 +156,15 @@ class LiveEventBus private constructor() {
             observer: Observer<T>
         ) = observe(owner, key, false, observer)
 
-
         fun observeForever(
-            owner: LifecycleOwner,
+            key: String?,
             observer: Observer<T>
-        ) = observeForever(owner, null, false, observer)
-
-        fun observeForever(
-            owner: LifecycleOwner,
-            key: String,
-            observer: Observer<T>
-        ) = observeForever(owner, key, false, observer)
-
+        ) = observeForever(key, false, observer)
 
         fun observeForeverSticky(
-            owner: LifecycleOwner,
+            key: String?,
             observer: Observer<T>
-        ) = observeForever(owner, null, true, observer)
-
-        fun observeForeverSticky(
-            owner: LifecycleOwner,
-            key: String,
-            observer: Observer<T>
-        ) = observeForever(owner, key, true, observer)
+        ) = observeForever(key, true, observer)
 
         /**
          * 支持粘性事件
@@ -198,5 +183,10 @@ class LiveEventBus private constructor() {
             key: String,
             observer: Observer<T>
         ) = observe(owner, key, true, observer)
+
+
+        fun removeObserver(owner: LifecycleOwner) {
+            ((stickyEventMap[clazz] ?: liveDataMap[clazz]) ?: return).removeObservers(owner)
+        }
     }
 }
