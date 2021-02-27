@@ -33,9 +33,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.open).setOnClickListener {
             startActivity(Intent(this, SecondActivity::class.java))
         }
-        LiveEventBus.instance.on(SecondEvent::class.java).observeForever(this, {
+        LiveEventBus.instance.on(SecondEvent::class.java).observeForever {
             findViewById<TextView>(R.id.text).text = it.name
-        })
+        }
 
     }
 }

@@ -157,12 +157,12 @@ class LiveEventBus private constructor() {
         ) = observe(owner, key, false, observer)
 
         fun observeForever(
-            key: String?,
+            key: String? = null,
             observer: Observer<T>
         ) = observeForever(key, false, observer)
 
         fun observeForeverSticky(
-            key: String?,
+            key: String? = null,
             observer: Observer<T>
         ) = observeForever(key, true, observer)
 

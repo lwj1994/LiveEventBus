@@ -106,7 +106,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     }
 
     inline fun observeForever(
-        key: String?,
+        key: String? = null,
         crossinline block: ((T?) -> Unit)
     ) {
         observeForever(key, Observer {
@@ -115,7 +115,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     }
 
     inline fun observeForeverNonNull(
-        key: String?,
+        key: String? = null,
         crossinline block: ((T) -> Unit)
     ) {
         observeForever(key, Observer {
