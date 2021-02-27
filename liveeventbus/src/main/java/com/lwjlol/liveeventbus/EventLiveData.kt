@@ -123,6 +123,11 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         })
     }
 
+    fun removeObserver(key: String? = null, observer: Observer<in T>) {
+        super.removeObserver(observer)
+        reset(key ?: observer.toString())
+    }
+
     override fun removeObserver(observer: Observer<in T>) {
         super.removeObserver(observer)
         reset(observer.toString())

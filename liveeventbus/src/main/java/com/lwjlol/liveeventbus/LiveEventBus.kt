@@ -185,8 +185,10 @@ class LiveEventBus private constructor() {
         ) = observe(owner, key, true, observer)
 
 
-        fun removeObserver(owner: LifecycleOwner) {
-            ((stickyEventMap[clazz] ?: liveDataMap[clazz]) ?: return).removeObservers(owner)
+        fun removeObserver(key: String? = null, observer: Observer<T>) {
+            @Suppress("UNCHECKED_CAST")
+            (((stickyEventMap[clazz] ?: liveDataMap[clazz])
+                ?: return) as EventLiveData<T>).removeObserver(observer)
         }
     }
 }
