@@ -34,29 +34,23 @@ Add it in your root build.gradle at the end of repositories:
 * __只有 2 个类十分小巧，你可以直接 copy 去使用__
 ## 使用方法
 
+### 普通事件
 
-LiveEventBus 将事件分为这 4 种，每种有对应的使用方法，不要混淆他们。
-* 关联生命周期的普通事件
-* 关联生命周期的粘性事件
-* 不关联生命周期 (但是会 __自动销毁__ ) 的普通事件
-* 不关联生命周期 (但是会 __自动销毁__ ) 的粘性事件
-### 关联生命周期的普通事件
-这类事件和 LiveData 一样，完全跟随生命周期，在 lifecycle 不活跃的时候不会接收到消息。
-
-* __所以一旦 Activity 进入 onStop 就收不到消息，只有等 Activity 恢复到 onStart 才能继续收到消息。__
-* __这类事件不支持粘性，只有先 observe 才能收到后续的消息__
+非粘性，必须先 `observe` 之后才能收到消息
 ```
 //接收事件：
 LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner) {
     //
 }
+
+
 // 发送事件：
 LiveEventBus.instance.send(Event()）
-```
-### 关联生命周期的粘性事件
-和上述事件【关联生命周期的普通事件】一样，但是多了粘性的特性：
 
-* __支持先 sendSticky 发送事件，然后再  observeSticky__
+```
+### 粘性事件
+
+* __可以先发送事件再接收__
 ```
 // 发送粘性事件：
 LiveEventBus.instance.sendSticky(Event()）
@@ -66,31 +60,18 @@ LiveEventBus.instance.on(Event::class.java).observeSticky(lifecycleOwner) {
     //
 }
 ```
-### 不关联生命周期 (但是会自动销毁) 的普通事件
-和 【关联生命周期的普通事件】类似，不同的是：
-* __当 Activity/Fragment 不活跃的时候（onStop）同样能收到事件进行回调__
-* __在 Activity/Fragment onDestroy 的时候自动注销事件，所以不必担心泄露问题__
 
+## 自定义 key
+你可以根据需求，传入自定义的 key，该库会根据 key 来决定是否接收事件：一个事件只能被一个 key 消费一次。
+默认 `key = lifecycleOwner::class.qualifiedName`
 ```
 //接收事件：
-LiveEventBus.instance.on(ForeverEvent::class.java).observeForever(this) {
+LiveEventBus.instance.on(Event::class.java).observe(key, lifecycleOwner) {
     //
 }
-// 发送事件
-LiveEventBus.instance.send(ForeverEvent())
 ```
 
-### 不关联生命周期 (但是会自动销毁) 的粘性事件
-和【不关联生命周期 (但是会自动销毁) 的普通事件】类似，但是多了粘性的特性：
-* __支持先 sendSticky 发送事件，然后再  observeSticky__
-```
-// 发送粘性事件
-LiveEventBus.instance.sendSticky(ForeverEvent())
-// 接收粘性事件
-LiveEventBus.instance.on(ForeverEvent::class.java).observeForeverSticky(this) {
-    //
-}
-```
+
 
 ## 原理
 `LiveEventBus` 主要内部实现依赖于 `EventLiveData`， `EventLiveData` 继承自 LiveData，可以单独拿出来使用。
