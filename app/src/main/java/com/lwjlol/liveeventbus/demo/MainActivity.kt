@@ -19,7 +19,7 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 //        liveData.value = null
-        liveData.observe(this) {
+        liveData.observeNonNull(this) {
             findViewById<TextView>(R.id.text).text = "${it}"
         }
 
@@ -27,13 +27,13 @@ class MainActivity : AppCompatActivity() {
             LiveEventBus.instance.sendSticky(FirstEvent("event from MainActivity"))
         }
         findViewById<View>(R.id.call).setOnClickListener {
-            liveData.call()
             liveData.value = null
+            liveData.call()
         }
         findViewById<View>(R.id.open).setOnClickListener {
             startActivity(Intent(this, SecondActivity::class.java))
         }
-        LiveEventBus.instance.on(SecondEvent::class.java).observeForever {
+        LiveEventBus.instance.on(SecondEvent::class.java).observeForever(this) {
             findViewById<TextView>(R.id.text).text = it.name
         }
 

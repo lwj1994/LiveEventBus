@@ -131,6 +131,7 @@ class LiveEventBus private constructor() {
 
 
         private fun <T> observeForever(
+            owner: LifecycleOwner,
             key: String?,
             sticky: Boolean,
             observer: Observer<T>
@@ -142,7 +143,7 @@ class LiveEventBus private constructor() {
                 } else {
                     liveDataMap.get(clazz)
                 } ?: ifProcessorMapGetNull(sticky)) as EventLiveData<T>
-            liveData.observeForever(key, observer)
+            liveData.observeForever(owner, key, observer)
         }
 
         fun observe(
@@ -157,14 +158,16 @@ class LiveEventBus private constructor() {
         ) = observe(owner, key, false, observer)
 
         fun observeForever(
+            owner: LifecycleOwner,
             key: String? = null,
             observer: Observer<T>
-        ) = observeForever(key, false, observer)
+        ) = observeForever(owner, key, false, observer)
 
         fun observeForeverSticky(
+            owner: LifecycleOwner,
             key: String? = null,
             observer: Observer<T>
-        ) = observeForever(key, true, observer)
+        ) = observeForever(owner, key, true, observer)
 
         /**
          * 支持粘性事件

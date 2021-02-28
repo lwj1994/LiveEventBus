@@ -1,6 +1,7 @@
 package com.lwjlol.liveeventbus
 
 import android.os.Looper
+import android.os.SystemClock
 import androidx.annotation.MainThread
 import androidx.collection.ArrayMap
 import androidx.fragment.app.Fragment
@@ -13,12 +14,13 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private val tempValueMap = ArrayMap<String, Any?>(2)
+    private val foreverObserverMap = ArrayMap<String, Observer<T>>(2)
     private val callMap = ArrayMap<String, Int>(2)
     private var isObservedMap = ArrayMap<String, Boolean>(2)
     private val callCount = AtomicInteger(0)
 
-    @Volatile
-    private var lastIsCall: Boolean? = null
+    var lastIsCall: Boolean? = null
+        private set
 
     fun call() {
         callCount.incrementAndGet()
@@ -95,40 +97,51 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         crossinline block: ((T) -> Unit)
     ) {
         observe(owner, key ?: getKey(owner), Observer {
+            require(lastIsCall == false) {
+                "observeNonNull unSupport observe Call, use observe"
+            }
             block(it ?: return@Observer)
         })
     }
 
     @MainThread
     override fun observeForever(observer: Observer<in T>) {
-        observeForever(observer.toString(), observer)
+        observeForever(null, observer.toString(), observer)
     }
 
 
     @MainThread
     fun observeForever(
-        key: String?,
+        owner: LifecycleOwner? = null,
+        key: String? = null,
         observer: Observer<in T>
     ) {
-        val k = key ?: observer.toString()
-        onObserve(null, k)
-        super.observeForever(getObserverWrapper(k, observer))
+        val k = key ?: getKey(owner)
+        onObserve(owner, k)
+        super.observeForever(getObserverWrapper(k, observer).also {
+            foreverObserverMap[key] = it
+        })
     }
 
     inline fun observeForever(
+        owner: LifecycleOwner?,
         key: String? = null,
         crossinline block: ((T?) -> Unit)
     ) {
-        observeForever(key, Observer {
+        observeForever(owner, key, Observer {
+            require(lastIsCall == false) {
+                "observeNonNull unSupport observe Call, use observe"
+            }
             block(it)
         })
     }
 
     inline fun observeForeverNonNull(
+        owner: LifecycleOwner?,
         key: String? = null,
         crossinline block: ((T) -> Unit)
     ) {
-        observeForever(key, Observer {
+        observeForever(owner, key, Observer {
             block(it ?: return@Observer)
         })
     }
@@ -190,11 +203,17 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         }
     }
 
-    fun getKey(owner: LifecycleOwner) = "${owner::class.qualifiedName}"
+    fun getKey(owner: LifecycleOwner?) =
+        if (owner != null) "${owner::class.qualifiedName}" else SystemClock.currentThreadTimeMillis()
+            .toString()
 
-    fun onClear(key: String) {
-        isObservedMap[key] = null
-        callMap[key] = null
+    private fun onClear(key: String) {
+        val observer = foreverObserverMap[key]
+        if (observer != null) {
+            removeObserver(observer)
+        } else {
+            reset(key)
+        }
     }
 
     private class OnDestroyLifecycleObserver<T>(
@@ -230,6 +249,25 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
             sb.append("{}")
         }
 
+        sb.append("\nforeverObserverMap = ")
+        if (foreverObserverMap.keys.isEmpty()) {
+            sb.append("{}")
+        } else {
+            foreverObserverMap.keys.forEachIndexed { index, key ->
+                if (index == 0) {
+                    sb.append("{")
+                }
+                sb.append(key)
+                    .append(":")
+                    .append(foreverObserverMap[key])
+                if (index == foreverObserverMap.keys.size - 1) {
+                    sb.append("}")
+                } else {
+                    sb.append(", ")
+                }
+            }
+        }
+
         sb.append("\nisObservedMap = ")
         if (isObservedMap.isEmpty) {
             sb.append("{}")
@@ -257,6 +295,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         tempValueMap[key] = null
         isObservedMap[key] = null
         callMap[key] = null
+        foreverObserverMap[key] = null
     }
 
     companion object {
