@@ -175,7 +175,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         reset(observer.toString())
     }
 
-    fun LifecycleOwner.get() = if (this is Fragment) viewLifecycleOwner else this
+    fun LifecycleOwner.get() = if (this is Fragment && view != null) viewLifecycleOwner else this
 
     private fun onObserve(
         owner: LifecycleOwner?,
