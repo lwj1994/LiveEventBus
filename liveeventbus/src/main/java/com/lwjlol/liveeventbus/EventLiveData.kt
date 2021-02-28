@@ -3,6 +3,7 @@ package com.lwjlol.liveeventbus
 import android.os.Looper
 import androidx.annotation.MainThread
 import androidx.collection.ArrayMap
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -59,7 +60,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         observer: Observer<in T>
     ) {
         onObserve(owner, key)
-        super.observe(owner, getObserverWrapper(key, observer))
+        super.observe(owner.get(), getObserverWrapper(key, observer))
     }
 
     override fun observe(
@@ -133,11 +134,13 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         reset(observer.toString())
     }
 
+    fun LifecycleOwner.get() = if (this is Fragment) viewLifecycleOwner else this
+
     private fun onObserve(
         owner: LifecycleOwner?,
         key: String
     ) {
-        owner?.lifecycle?.addObserver(OnDestroyLifecycleObserver(this, key))
+        (owner?.get())?.lifecycle?.addObserver(OnDestroyLifecycleObserver(this, key))
         isObservedMap[key] = true
         if (tempValueMap[key] == null) {
             tempValueMap[key] = if (!sticky || value == null) {
