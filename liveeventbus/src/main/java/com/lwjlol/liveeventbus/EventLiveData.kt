@@ -19,22 +19,39 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private var isObservedMap = ArrayMap<String, Boolean>(2)
     private val callCount = AtomicInteger(0)
 
+    /**
+     * 最后一个事件是否是 [call] 发出的
+     */
     var lastIsCall: Boolean? = null
         private set
 
+    @Volatile
+    private var invokePostValueFromCall = false
+
+    /**
+     * 直接发送一个 null 值来通知 [Observer] 回调，必须通过 [observe] 注册才能收到结果，如果通过 [observeNonNull]
+     * 注册会抛出错误。
+     */
     fun call() {
         callCount.incrementAndGet()
-        lastIsCall = true
         setCallForAll()
+        lastIsCall = true
         if (Looper.myLooper() == Looper.getMainLooper()) {
             super.setValue(null)
         } else {
+            invokePostValueFromCall = true
             super.postValue(null)
         }
     }
 
+    override fun postValue(value: T?) {
+        invokePostValueFromCall = false
+        super.postValue(value)
+    }
+
     override fun setValue(value: T?) {
-        lastIsCall = false
+        lastIsCall = invokePostValueFromCall
+        invokePostValueFromCall = false
         setValueForAll(value)
         super.setValue(value)
     }
@@ -91,6 +108,9 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         })
     }
 
+    /**
+     * 观察非 null 的值，对 [call] 不适用
+     */
     inline fun observeNonNull(
         owner: LifecycleOwner,
         key: String? = null,
@@ -108,7 +128,6 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     override fun observeForever(observer: Observer<in T>) {
         observeForever(null, observer.toString(), observer)
     }
-
 
     @MainThread
     fun observeForever(
@@ -171,14 +190,12 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
                 value
             }
         }
-
         // 最后一次是 setValue
         if (lastIsCall == false && sticky) {
             if (value == null) {
                 tempValueMap[key] = NULL
             }
         }
-
         // 最后一次是 call 事件
         if (lastIsCall == true && callCount.get() > 0 && sticky) {
             if (callMap.getOrDefault(key, 0) < callCount.get()) {
@@ -220,7 +237,6 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         private val livaData: EventLiveData<T>,
         private val key: String
     ) : LifecycleObserver {
-
         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         fun onDestroy() {
             livaData.onClear(key)
@@ -286,7 +302,6 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
                 }
             }
         }
-
         val address = super.toString()
         return "$address:\n$sb"
     }

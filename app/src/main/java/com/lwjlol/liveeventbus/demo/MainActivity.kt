@@ -27,8 +27,17 @@ class MainActivity : AppCompatActivity() {
             LiveEventBus.instance.sendSticky(FirstEvent("event from MainActivity"))
         }
         findViewById<View>(R.id.call).setOnClickListener {
-            liveData.value = null
-            liveData.call()
+            Thread {
+                liveData.call()
+                liveData.postValue(null)
+                liveData.postValue("23123")
+                liveData.postValue("2")
+                liveData.postValue("3")
+                liveData.call()
+
+            }.start()
+
+
         }
         findViewById<View>(R.id.open).setOnClickListener {
             startActivity(Intent(this, SecondActivity::class.java))
