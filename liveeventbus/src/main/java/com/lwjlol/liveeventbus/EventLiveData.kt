@@ -18,24 +18,33 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private val callCount = AtomicInteger(0)
 
     @Volatile
-    private var isCall: Boolean? = null
+    private var lastIsCall: Boolean? = null
 
     fun call() {
         callCount.incrementAndGet()
-        isCall = true
+        lastIsCall = true
+        setCallForAll()
         if (Looper.myLooper() == Looper.getMainLooper()) {
-            setValueForAll(value)
             super.setValue(null)
         } else {
-            setValueForAll(value)
             super.postValue(null)
         }
     }
 
     override fun setValue(value: T?) {
-        isCall = false
+        lastIsCall = false
         setValueForAll(value)
         super.setValue(value)
+    }
+
+    private fun setCallForAll() {
+        for (item in tempValueMap) {
+            // 跳过非粘性还没注册的组件
+            if (isObservedMap.getOrDefault(item.key, false) != true && !sticky) {
+                continue
+            }
+            item.setValue(CALL)
+        }
     }
 
     private fun setValueForAll(value: T?) {
@@ -151,16 +160,16 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         }
 
         // 最后一次是 setValue
-        if (isCall == false && sticky) {
+        if (lastIsCall == false && sticky) {
             if (value == null) {
                 tempValueMap[key] = NULL
             }
         }
 
         // 最后一次是 call 事件
-        if (isCall == true && callCount.get() > 0 && sticky) {
+        if (lastIsCall == true && callCount.get() > 0 && sticky) {
             if (callMap.getOrDefault(key, 0) < callCount.get()) {
-                tempValueMap[key] = NULL
+                tempValueMap[key] = CALL
             }
         }
     }
@@ -174,7 +183,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
             @Suppress("UNCHECKED_CAST")
             observer.onChanged(value as T)
             // 消费完 call 事件就同步进度
-            if (isCall == true && tempValueMap[key] === NULL) {
+            if (tempValueMap[key] === CALL) {
                 callMap[key] = callCount.get()
             }
             tempValueMap[key] = UNSET
@@ -253,6 +262,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     companion object {
         private val UNSET = Any()
         private val NULL = Any()
+        private val CALL = Any()
         private const val TAG = "EventLiveData"
     }
 }
