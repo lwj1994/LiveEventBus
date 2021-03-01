@@ -54,16 +54,6 @@ public class LiveEventBus {
         this.eventMap.evictAll();
     }
 
-    private EventLiveData ifProcessorMapGetNull(Class clazz, boolean sticky) {
-        EventLiveData liveData = new EventLiveData(sticky);
-        if (sticky) {
-            stickyEventMap.put(clazz, liveData);
-        } else {
-            this.eventMap.put(clazz, liveData);
-        }
-        return liveData;
-    }
-
     public void send(@NonNull Object event) {
         sendInternal(event, false);
     }
