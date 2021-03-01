@@ -16,6 +16,44 @@ class LiveEventBus private constructor() {
         private const val DEFAULT_MAX_EVENT = 20
 
         val instance = Singleton.instance
+
+        @Suppress("UNCHECKED_CAST")
+        private fun getLiveData(
+            clazz: Class<*>,
+            sticky: Boolean,
+            eventMap: LruCache<Class<*>, EventLiveData<*>>,
+            stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
+        ): EventLiveData<Any> {
+            val liveData = (if (sticky) {
+                stickyEventMap[clazz]
+            } else {
+                eventMap.get(clazz)
+            } ?: ifProcessorMapGetNull(
+                clazz,
+                sticky,
+                eventMap,
+                stickyEventMap
+            )) as EventLiveData<Any>
+            check(liveData.sticky == sticky) {
+                "liveData has different sticky state to ${clazz.name}!"
+            }
+            return liveData
+        }
+
+        private fun ifProcessorMapGetNull(
+            clazz: Class<*>,
+            sticky: Boolean,
+            eventMap: LruCache<Class<*>, EventLiveData<*>>,
+            stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
+        ): EventLiveData<Any> {
+            val liveData = EventLiveData<Any>(sticky)
+            if (sticky) {
+                stickyEventMap[clazz] = liveData
+            } else {
+                eventMap.put(clazz, liveData)
+            }
+            return liveData
+        }
     }
 
     /**
@@ -33,18 +71,6 @@ class LiveEventBus private constructor() {
         eventMap.evictAll()
     }
 
-    private fun ifProcessorMapGetNull(
-        clazz: Class<*>,
-        sticky: Boolean
-    ): EventLiveData<Any> {
-        val liveData = EventLiveData<Any>(sticky)
-        if (sticky) {
-            stickyEventMap[clazz] = liveData
-        } else {
-            eventMap.put(clazz, liveData)
-        }
-        return liveData
-    }
 
     private fun sendInternal(
         event: Any,
@@ -52,36 +78,10 @@ class LiveEventBus private constructor() {
     ) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             synchronized(this) {
-                @Suppress("UNCHECKED_CAST") val liveData =
-                    ((if (sticky) {
-                        stickyEventMap[event::class.java]
-                    } else {
-                        eventMap.get(event::class.java)
-                    } ?: ifProcessorMapGetNull(
-                        event::class.java,
-                        sticky
-                    ))) as EventLiveData<Any>
-
-                check(liveData.sticky == sticky) {
-                    "liveData has different sticky state to ${event::class.simpleName}!"
-                }
-                liveData.postValue(event)
+                getLiveData(event::class.java, sticky, eventMap, stickyEventMap).postValue(event)
             }
         } else {
-            @Suppress("UNCHECKED_CAST") val liveData =
-                (if (sticky) {
-                    stickyEventMap[event::class.java]
-                } else {
-                    eventMap.get(event::class.java)
-                } ?: ifProcessorMapGetNull(
-                    event::class.java,
-                    sticky
-                )) as EventLiveData<Any>
-
-            check(liveData.sticky == sticky) {
-                "liveData has different sticky state to ${event::class.simpleName}!"
-            }
-            liveData.setValue(event)
+            getLiveData(event::class.java, sticky, eventMap, stickyEventMap).setValue(event)
         }
 
     }
@@ -108,25 +108,9 @@ class LiveEventBus private constructor() {
             observer: Observer<T>
         ) {
             @Suppress("UNCHECKED_CAST")
-            val liveData = (if (sticky) {
-                stickyEventMap[clazz]
-            } else {
-                liveDataMap.get(clazz)
-            } ?: ifProcessorMapGetNull(sticky)) as EventLiveData<T>
-            check(liveData.sticky == sticky) {
-                "liveData has different sticky state to ${clazz.simpleName}!"
-            }
+            val liveData =
+                getLiveData(clazz, sticky, liveDataMap, stickyEventMap) as EventLiveData<T>
             liveData.observe(owner, key ?: liveData.getKey(owner), observer)
-        }
-
-        private fun ifProcessorMapGetNull(sticky: Boolean): EventLiveData<T> {
-            val liveData = EventLiveData<T>(sticky)
-            if (sticky) {
-                stickyEventMap[clazz] = liveData
-            } else {
-                liveDataMap.put(clazz, liveData)
-            }
-            return liveData
         }
 
 
@@ -138,11 +122,7 @@ class LiveEventBus private constructor() {
         ) {
             @Suppress("UNCHECKED_CAST")
             val liveData =
-                (if (sticky) {
-                    stickyEventMap[clazz]
-                } else {
-                    liveDataMap.get(clazz)
-                } ?: ifProcessorMapGetNull(sticky)) as EventLiveData<T>
+                getLiveData(clazz, sticky, liveDataMap, stickyEventMap) as EventLiveData<T>
             liveData.observeForever(owner, key, observer)
         }
 

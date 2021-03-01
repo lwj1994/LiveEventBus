@@ -1,28 +1,4 @@
-
 [![](https://jitpack.io/v/lwj1994/LiveEventBus.svg)](https://jitpack.io/#lwj1994/LiveEventBus)
-
-## How to
-
-To get a Git project into your build:
-### Step 1. Add the JitPack repository to your build file
-
-Add it in your root build.gradle at the end of repositories:
-```
-	allprojects {
-		repositories {
-			...
-			maven { url 'https://jitpack.io' }
-		}
-	}
-```
-
-### Step 2. Add the dependency
-```
-	dependencies {
-	        implementation 'com.github.lwj1994:LiveEventBus:${latestVersion}'
-	}
-```
-
 
 ## 前言
 本库是使用 LiveData 实现的 EventBus，`LiveEventBus` 就是一种优雅的实现方式，没有修改任何源码，也没有任何反射。
@@ -32,8 +8,22 @@ Add it in your root build.gradle at the end of repositories:
 * __基于 LiveData 与 Lifecycle 紧密联系，可以自由选择是否关联 Lifecycle 的周期__
 * __可选是否支持粘性事件__
 * __只有 2 个类十分小巧，你可以直接 copy 去使用__
-## 使用方法
 
+> java 版本：  src/main/java/com/lwjlol/liveeventbus/javaversion/LiveEventBus.java
+
+## 使用方法
+```
+    allprojects {
+            repositories {
+                ...
+                maven { url 'https://jitpack.io' }
+            }
+    }
+
+	dependencies {
+	        implementation 'com.github.lwj1994:LiveEventBus:${latestVersion}'
+	}
+```
 ### 普通事件
 
 非粘性，必须先 `observe` 之后才能收到消息
