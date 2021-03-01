@@ -9,7 +9,7 @@
 * __可选是否支持粘性事件__
 * __只有 2 个类十分小巧，你可以直接 copy 去使用__
 
-> java 版本：  src/main/java/com/lwjlol/liveeventbus/javaversion/LiveEventBus.java
+> java 版本：  app/src/main/java/com/lwjlol/liveeventbus/javaversion/LiveEventBus.java
 
 ## 使用方法
 ```
