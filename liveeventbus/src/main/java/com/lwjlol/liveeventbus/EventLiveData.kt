@@ -29,7 +29,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private var invokePostValueFromCall = false
 
     /**
-     * 直接发送一个 null 值来通知 [Observer] 回调，必须通过 [observe] 注册才能收到结果，如果通过 [observeNonNull]
+     * 直接发送一个 null 值来通知 [Observer] 回调，必须通过 [observe]/[observeForever] 注册才能收到结果，如果通过 [observeNonNull]/[observeForeverNonNull]
      * 注册会抛出错误。
      */
     fun call() {
@@ -161,6 +161,9 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         crossinline block: ((T) -> Unit)
     ) {
         observeForever(owner, key, Observer {
+            require(lastIsCall == false) {
+                "observeNonNull unSupport observe Call, use observe"
+            }
             block(it ?: return@Observer)
         })
     }
@@ -221,8 +224,12 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     }
 
     fun getKey(owner: LifecycleOwner?) =
-        if (owner != null) "${owner::class.qualifiedName}" else SystemClock.currentThreadTimeMillis()
-            .toString()
+        if (owner != null) {
+            owner::class.qualifiedName ?: owner::class.java.name
+        } else {
+            SystemClock.currentThreadTimeMillis().toString()
+        }
+
 
     private fun onClear(key: String) {
         val observer = foreverObserverMap[key]

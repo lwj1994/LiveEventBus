@@ -117,6 +117,5 @@ public class LiveEventBus {
         public final void observeSticky(@NonNull LifecycleOwner owner, @NonNull String key, @NonNull Observer<? super T> observer) {
             this.observe(owner, key, true, observer, false);
         }
-
     }
 }
