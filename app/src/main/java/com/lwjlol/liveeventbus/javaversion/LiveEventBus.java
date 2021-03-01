@@ -64,11 +64,11 @@ public class LiveEventBus {
         return liveData;
     }
 
-    public void send(@NonNull Object event, boolean sticky) {
+    public void send(@NonNull Object event) {
         sendInternal(event, false);
     }
 
-    public void sendSticky(@NonNull Object event, boolean sticky) {
+    public void sendSticky(@NonNull Object event) {
         sendInternal(event, true);
     }
 
