@@ -13,10 +13,9 @@ class SecondActivity : AppCompatActivity() {
             LiveEventBus.instance.send(SecondEvent("event from SecondActivity"))
         }
 
-        LiveEventBus.instance.on(FirstEvent::class.java)
-            .observeSticky(this) {
-                findViewById<TextView>(R.id.text).text = it.name
-            }
+        LiveEventBus.instance.on(FirstEvent::class.java).observe(this) {
+            findViewById<TextView>(R.id.text).text = it.name
+        }
 
     }
 

@@ -5,6 +5,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.RestrictTo
 import androidx.collection.ArrayMap
 import androidx.collection.LruCache
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 
@@ -20,27 +21,25 @@ class LiveEventBus private constructor() {
         @Suppress("UNCHECKED_CAST")
         private fun getLiveData(
             clazz: Class<*>,
-            sticky: Boolean,
             eventMap: LruCache<Class<*>, EventLiveData<*>>,
             stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
-        ): EventLiveData<Any> {
-            val liveData = (if (sticky) {
-                stickyEventMap[clazz]
-            } else {
-                eventMap.get(clazz)
-            } ?: ifProcessorMapGetNull(
+        ): Pair<EventLiveData<Any>, EventLiveData<Any>> {
+            val eventLiveData: EventLiveData<Any> = (eventMap[clazz] ?: createAndPutLiveData(
                 clazz,
-                sticky,
+                false,
                 eventMap,
                 stickyEventMap
             )) as EventLiveData<Any>
-            check(liveData.sticky == sticky) {
-                "liveData has different sticky state to ${clazz.name}!"
-            }
-            return liveData
+            val stickyLiveData: EventLiveData<Any> = (stickyEventMap[clazz] ?: createAndPutLiveData(
+                clazz,
+                true,
+                eventMap,
+                stickyEventMap
+            )) as EventLiveData<Any>
+            return eventLiveData to stickyLiveData
         }
 
-        private fun ifProcessorMapGetNull(
+        private fun createAndPutLiveData(
             clazz: Class<*>,
             sticky: Boolean,
             eventMap: LruCache<Class<*>, EventLiveData<*>>,
@@ -117,12 +116,28 @@ class LiveEventBus private constructor() {
     ) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             synchronized(this) {
-                getLiveData(event::class.java, sticky, eventMap, stickyEventMap).postValue(event)
+                getSingleLiveData(event, sticky).postValue(event)
             }
         } else {
-            getLiveData(event::class.java, sticky, eventMap, stickyEventMap).setValue(event)
+            getSingleLiveData(event, sticky).value = event
         }
+    }
 
+
+    private fun getSingleLiveData(
+        event: Any,
+        sticky: Boolean
+    ): EventLiveData<Any> {
+        val (liveData, stickyLiveData) = getLiveData(
+            event::class.java,
+            eventMap,
+            stickyEventMap
+        )
+        return if (sticky) {
+            stickyLiveData
+        } else {
+            liveData
+        }
     }
 
     @MainThread
@@ -141,77 +156,33 @@ class LiveEventBus private constructor() {
         private val liveDataMap: LruCache<Class<*>, EventLiveData<*>>,
         private val stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
     ) {
-        private fun <T> observe(
-            owner: LifecycleOwner,
-            ownerKey: String?,
-            sticky: Boolean,
-            observer: Observer<T>
-        ) {
-            @Suppress("UNCHECKED_CAST")
-            val liveData =
-                getLiveData(clazz, sticky, liveDataMap, stickyEventMap) as EventLiveData<T>
-            liveData.observe(owner, ownerKey ?: liveData.getKey(owner), observer)
-        }
-
-
-        private fun <T> observeForever(
-            owner: LifecycleOwner,
-            ownerKey: String?,
-            sticky: Boolean,
-            observer: Observer<T>
-        ) {
-            @Suppress("UNCHECKED_CAST")
-            val liveData =
-                getLiveData(clazz, sticky, liveDataMap, stickyEventMap) as EventLiveData<T>
-            liveData.observeForever(owner, ownerKey, observer)
-        }
-
-        fun observe(
-            owner: LifecycleOwner,
-            observer: Observer<T>
-        ) = observe(owner, null, false, observer)
-
-        fun observe(
-            owner: LifecycleOwner,
-            ownerKey: String,
-            observer: Observer<T>
-        ) = observe(owner, ownerKey, false, observer)
-
-        fun observeForever(
-            owner: LifecycleOwner,
-            ownerKey: String? = null,
-            observer: Observer<T>
-        ) = observeForever(owner, ownerKey, false, observer)
-
-        fun observeForeverSticky(
-            owner: LifecycleOwner,
-            ownerKey: String? = null,
-            observer: Observer<T>
-        ) = observeForever(owner, ownerKey, true, observer)
 
         /**
-         * 支持粘性事件
+         * @param owner
+         * @param ownerKey [LifecycleOwner] 的 key 默认为 [EventLiveData.getKey]
+         * @param forever 是否一直观察 true:调用[observe]之后就会收到回调，直到[owner]销毁，
+         * false:仅在 [owner] 的生命周期 >= [Lifecycle.Event.ON_START] 时才会收到回调
          */
-        fun observeSticky(
+        @Suppress("UNCHECKED_CAST")
+        fun observe(
             owner: LifecycleOwner,
+            ownerKey: String? = null,
+            forever: Boolean = false,
             observer: Observer<T>
-        ) = observe(owner, null, true, observer)
-
-
-        /**
-         * 支持粘性事件
-         */
-        fun observeSticky(
-            owner: LifecycleOwner,
-            ownerKey: String,
-            observer: Observer<T>
-        ) = observe(owner, ownerKey, true, observer)
-
-
-        fun removeObserver(ownerKey: String? = null, observer: Observer<T>) {
-            @Suppress("UNCHECKED_CAST")
-            (((stickyEventMap[clazz] ?: liveDataMap[clazz])
-                ?: return) as EventLiveData<T>).removeObserver(observer)
+        ) {
+            val (liveData, stickyLiveData) = getLiveData(
+                clazz,
+                liveDataMap,
+                stickyEventMap
+            ) as Pair<EventLiveData<T>, EventLiveData<T>>
+            val k = ownerKey ?: liveData.getKey(owner)
+            if (forever) {
+                liveData.observeForever(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
+            } else {
+                liveData.observe(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
+            }
         }
     }
 
@@ -230,7 +201,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Int) -> Unit
         ) {
-            this.observe(owner, ownerKey, sticky = sticky, forever = forever) {
+            this.observe(owner, ownerKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.intValue)
                 }
@@ -244,7 +215,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Long) -> Unit
         ) {
-            this.observe(owner, ownerKey, sticky = sticky, forever = forever) {
+            this.observe(owner, ownerKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.longValue)
                 }
@@ -258,7 +229,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Double) -> Unit
         ) {
-            this.observe(owner, ownerKey, sticky = sticky, forever = forever) {
+            this.observe(owner, ownerKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.doubleValue)
                 }
@@ -272,7 +243,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Float) -> Unit
         ) {
-            this.observe(owner, ownerKey, sticky = sticky, forever = forever) {
+            this.observe(owner, ownerKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.floatValue)
                 }
@@ -286,7 +257,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Boolean) -> Unit
         ) {
-            this.observe(owner, ownerKey, sticky = sticky, forever = forever) {
+            this.observe(owner, ownerKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.booleanValue)
                 }
@@ -296,11 +267,10 @@ class LiveEventBus private constructor() {
         inline fun observeChar(
             owner: LifecycleOwner,
             ownerKey: String? = null,
-            sticky: Boolean = false,
             forever: Boolean = false,
             crossinline block: (Char) -> Unit
         ) {
-            this.observe(owner, ownerKey, sticky = sticky, forever = forever) {
+            this.observe(owner, ownerKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.charValue)
                 }
@@ -314,32 +284,33 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (String) -> Unit
         ) {
-            this.observe(owner, ownerKey, sticky = sticky, forever = forever) {
+            this.observe(owner, ownerKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.stringValue)
                 }
             }
         }
 
-        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        @Suppress("UNCHECKED_CAST")
         fun observe(
             owner: LifecycleOwner,
             key: String?,
-            sticky: Boolean,
             forever: Boolean,
             observer: Observer<in PrimitiveEvent>,
         ) {
-            @Suppress("UNCHECKED_CAST") val liveData = getLiveData(
-                PrimitiveEvent::class.java,
-                sticky,
-                liveDataMap,
-                stickyEventMap
-            ) as EventLiveData<PrimitiveEvent>
+            val (liveData, stickyLiveData) =
+                getLiveData(
+                    PrimitiveEvent::class.java,
+                    liveDataMap,
+                    stickyEventMap
+                ) as Pair<EventLiveData<PrimitiveEvent>, EventLiveData<PrimitiveEvent>>
             val k = key ?: liveData.getKey(owner)
             if (forever) {
                 liveData.observeForever(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
             } else {
                 liveData.observe(owner, k, observer)
+                stickyLiveData.observe(owner, k, observer)
             }
         }
     }

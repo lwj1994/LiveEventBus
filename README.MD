@@ -46,7 +46,7 @@ LiveEventBus.instance.send(Event()）
 LiveEventBus.instance.sendSticky(Event()）
 
 //接收粘性事件：
-LiveEventBus.instance.on(Event::class.java).observeSticky(lifecycleOwner) {
+LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner) {
     //
 }
 ```
