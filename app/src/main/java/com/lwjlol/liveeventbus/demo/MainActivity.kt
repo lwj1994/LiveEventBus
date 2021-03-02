@@ -42,9 +42,14 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.open).setOnClickListener {
             startActivity(Intent(this, SecondActivity::class.java))
         }
-        LiveEventBus.instance.on(SecondEvent::class.java).observeForever(this) {
-            findViewById<TextView>(R.id.text).text = it.name
+        LiveEventBus.instance.send("weqeqe", 12321313)
+        LiveEventBus.instance.on("qwe").observeLong(this) {
+
         }
+
+//            .observeForever(this) {
+//            findViewById<TextView>(R.id.text).text = it.name
+//        }
 
         com.lwjlol.liveeventbus.javaversion.LiveEventBus.getInstance()
             .send("qeqwe", "wqeqweqwe")
