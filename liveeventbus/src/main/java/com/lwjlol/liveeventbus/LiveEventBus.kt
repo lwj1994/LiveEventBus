@@ -197,7 +197,6 @@ class LiveEventBus private constructor() {
         inline fun observeInt(
             owner: LifecycleOwner,
             ownerKey: String? = null,
-            sticky: Boolean = false,
             forever: Boolean = false,
             crossinline block: (Int) -> Unit
         ) {
@@ -211,7 +210,6 @@ class LiveEventBus private constructor() {
         inline fun observeLong(
             owner: LifecycleOwner,
             ownerKey: String? = null,
-            sticky: Boolean = false,
             forever: Boolean = false,
             crossinline block: (Long) -> Unit
         ) {
@@ -225,7 +223,6 @@ class LiveEventBus private constructor() {
         inline fun observeDouble(
             owner: LifecycleOwner,
             ownerKey: String? = null,
-            sticky: Boolean = false,
             forever: Boolean = false,
             crossinline block: (Double) -> Unit
         ) {
@@ -239,7 +236,6 @@ class LiveEventBus private constructor() {
         inline fun observeFloat(
             owner: LifecycleOwner,
             ownerKey: String? = null,
-            sticky: Boolean = false,
             forever: Boolean = false,
             crossinline block: (Float) -> Unit
         ) {
@@ -253,7 +249,6 @@ class LiveEventBus private constructor() {
         inline fun observeBoolean(
             owner: LifecycleOwner,
             ownerKey: String? = null,
-            sticky: Boolean = false,
             forever: Boolean = false,
             crossinline block: (Boolean) -> Unit
         ) {
@@ -280,7 +275,6 @@ class LiveEventBus private constructor() {
         inline fun observeString(
             owner: LifecycleOwner,
             ownerKey: String? = null,
-            sticky: Boolean = false,
             forever: Boolean = false,
             crossinline block: (String) -> Unit
         ) {
@@ -321,7 +315,7 @@ class LiveEventBus private constructor() {
     @RestrictTo(RestrictTo.Scope.LIBRARY)
     data class PrimitiveEvent(
         val eventKey: String = "",
-        val isSticky: Boolean = false,
+        val sticky: Boolean = false,
         val booleanValue: Boolean = false,
         val stringValue: String = "",
         val intValue: Int = 0,
