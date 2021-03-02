@@ -46,5 +46,13 @@ class MainActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.text).text = it.name
         }
 
+        com.lwjlol.liveeventbus.javaversion.LiveEventBus.getInstance()
+            .send("qeqwe", "wqeqweqwe")
+        com.lwjlol.liveeventbus.javaversion.LiveEventBus.getInstance().on("qeqwe")
+            .observe(this, com.lwjlol.liveeventbus.javaversion.LiveEventBus.CallbackString {
+
+            })
+
+
     }
 }
