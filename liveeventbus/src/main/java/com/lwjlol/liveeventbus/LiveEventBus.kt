@@ -103,27 +103,27 @@ class LiveEventBus private constructor() {
     ) {
         private fun <T> observe(
             owner: LifecycleOwner,
-            key: String?,
+            ownerKey: String?,
             sticky: Boolean,
             observer: Observer<T>
         ) {
             @Suppress("UNCHECKED_CAST")
             val liveData =
                 getLiveData(clazz, sticky, liveDataMap, stickyEventMap) as EventLiveData<T>
-            liveData.observe(owner, key ?: liveData.getKey(owner), observer)
+            liveData.observe(owner, ownerKey ?: liveData.getKey(owner), observer)
         }
 
 
         private fun <T> observeForever(
             owner: LifecycleOwner,
-            key: String?,
+            ownerKey: String?,
             sticky: Boolean,
             observer: Observer<T>
         ) {
             @Suppress("UNCHECKED_CAST")
             val liveData =
                 getLiveData(clazz, sticky, liveDataMap, stickyEventMap) as EventLiveData<T>
-            liveData.observeForever(owner, key, observer)
+            liveData.observeForever(owner, ownerKey, observer)
         }
 
         fun observe(
@@ -133,21 +133,21 @@ class LiveEventBus private constructor() {
 
         fun observe(
             owner: LifecycleOwner,
-            key: String,
+            ownerKey: String,
             observer: Observer<T>
-        ) = observe(owner, key, false, observer)
+        ) = observe(owner, ownerKey, false, observer)
 
         fun observeForever(
             owner: LifecycleOwner,
-            key: String? = null,
+            ownerKey: String? = null,
             observer: Observer<T>
-        ) = observeForever(owner, key, false, observer)
+        ) = observeForever(owner, ownerKey, false, observer)
 
         fun observeForeverSticky(
             owner: LifecycleOwner,
-            key: String? = null,
+            ownerKey: String? = null,
             observer: Observer<T>
-        ) = observeForever(owner, key, true, observer)
+        ) = observeForever(owner, ownerKey, true, observer)
 
         /**
          * 支持粘性事件
@@ -163,12 +163,12 @@ class LiveEventBus private constructor() {
          */
         fun observeSticky(
             owner: LifecycleOwner,
-            key: String,
+            ownerKey: String,
             observer: Observer<T>
-        ) = observe(owner, key, true, observer)
+        ) = observe(owner, ownerKey, true, observer)
 
 
-        fun removeObserver(key: String? = null, observer: Observer<T>) {
+        fun removeObserver(ownerKey: String? = null, observer: Observer<T>) {
             @Suppress("UNCHECKED_CAST")
             (((stickyEventMap[clazz] ?: liveDataMap[clazz])
                 ?: return) as EventLiveData<T>).removeObserver(observer)
