@@ -49,8 +49,8 @@ public class LiveEventBus {
         return new Bus<>(clazz, eventMap, stickyEventMap);
     }
 
-    public BasicBus on(String key) {
-        return new BasicBus(key, eventMap, stickyEventMap);
+    public PrimitiveBus on(String key) {
+        return new PrimitiveBus(key, eventMap, stickyEventMap);
     }
 
     public final void clear() {
@@ -63,7 +63,7 @@ public class LiveEventBus {
     }
 
     public void send(String key, String s, boolean sticky) {
-        BasicEvent event = new BasicEvent();
+        PrimitiveEvent event = new PrimitiveEvent();
         event.setS(s);
         sendInternal(event, sticky);
     }
@@ -97,37 +97,37 @@ public class LiveEventBus {
     }
 
     public void send(String key, int s, boolean sticky) {
-        BasicEvent event = new BasicEvent();
+        PrimitiveEvent event = new PrimitiveEvent();
         event.setNumberInt(s);
         sendInternal(event, sticky);
     }
 
     public void send(String key, long s, boolean sticky) {
-        BasicEvent event = new BasicEvent();
+        PrimitiveEvent event = new PrimitiveEvent();
         event.setNumberLong(s);
         sendInternal(event, sticky);
     }
 
     public void send(String key, double s, boolean sticky) {
-        BasicEvent event = new BasicEvent();
+        PrimitiveEvent event = new PrimitiveEvent();
         event.setNumberDouble(s);
         sendInternal(event, sticky);
     }
 
     public void send(String key, float s, boolean sticky) {
-        BasicEvent event = new BasicEvent();
+        PrimitiveEvent event = new PrimitiveEvent();
         event.setNumberFloat(s);
         sendInternal(event, sticky);
     }
 
     public void send(String key, char s, boolean sticky) {
-        BasicEvent event = new BasicEvent();
+        PrimitiveEvent event = new PrimitiveEvent();
         event.setC(s);
         sendInternal(event, sticky);
     }
 
     public void send(String key, boolean s, boolean sticky) {
-        BasicEvent event = new BasicEvent();
+        PrimitiveEvent event = new PrimitiveEvent();
         event.setB(s);
         sendInternal(event, sticky);
     }
@@ -180,7 +180,7 @@ public class LiveEventBus {
         void onChanged(boolean v);
     }
 
-    public static final class BasicBus {
+    public static final class PrimitiveBus {
         @NonNull
         private final String key;
         @NonNull
@@ -188,15 +188,15 @@ public class LiveEventBus {
         @NonNull
         private final ArrayMap<Class, EventLiveData> stickyEventMap;
 
-        public BasicBus(@NonNull String key, @NonNull LruCache<Class, EventLiveData> liveDataMap, @NonNull ArrayMap<Class, EventLiveData> stickyEventMap) {
+        public PrimitiveBus(@NonNull String key, @NonNull LruCache<Class, EventLiveData> liveDataMap, @NonNull ArrayMap<Class, EventLiveData> stickyEventMap) {
             this.key = key;
             this.liveDataMap = liveDataMap;
             this.stickyEventMap = stickyEventMap;
         }
 
-        private void observe(@NonNull LifecycleOwner owner, @Nullable String key, boolean sticky, @NonNull Observer<? super BasicEvent> observer, boolean isForever) {
+        private void observe(@NonNull LifecycleOwner owner, @Nullable String key, boolean sticky, @NonNull Observer<? super PrimitiveEvent> observer, boolean isForever) {
             //noinspection unchecked
-            EventLiveData<BasicEvent> liveData = getLiveData(BasicBus.class, sticky, this.liveDataMap, this.stickyEventMap);
+            EventLiveData<PrimitiveEvent> liveData = getLiveData(PrimitiveBus.class, sticky, this.liveDataMap, this.stickyEventMap);
             if (key == null) {
                 key = liveData.getKey(owner);
             }
@@ -213,9 +213,9 @@ public class LiveEventBus {
          * @param observer
          */
         public final void observe(@NonNull LifecycleOwner owner, @Nullable String ownerKey, boolean sticky, @NonNull CallbackString observer) {
-            this.observe(owner, ownerKey, sticky, new Observer<BasicEvent>() {
+            this.observe(owner, ownerKey, sticky, new Observer<PrimitiveEvent>() {
                 @Override
-                public void onChanged(BasicEvent event) {
+                public void onChanged(PrimitiveEvent event) {
                     if (key.equals(event.getKey()))
                         observer.onChanged(event.s);
                 }
@@ -247,54 +247,54 @@ public class LiveEventBus {
         }
 
         public final void observe(@NonNull LifecycleOwner owner, @Nullable String ownerKey, boolean sticky, @NonNull CallbackInt observer) {
-            this.observe(owner, ownerKey, sticky, new Observer<BasicEvent>() {
+            this.observe(owner, ownerKey, sticky, new Observer<PrimitiveEvent>() {
                 @Override
-                public void onChanged(BasicEvent event) {
+                public void onChanged(PrimitiveEvent event) {
                     observer.onChanged(event.numberInt);
                 }
             }, false);
         }
 
         public final void observe(@NonNull LifecycleOwner owner, @Nullable String ownerKey, boolean sticky, @NonNull CallbackFloat observer) {
-            this.observe(owner, ownerKey, sticky, new Observer<BasicEvent>() {
+            this.observe(owner, ownerKey, sticky, new Observer<PrimitiveEvent>() {
                 @Override
-                public void onChanged(BasicEvent event) {
+                public void onChanged(PrimitiveEvent event) {
                     observer.onChanged(event.numberFloat);
                 }
             }, false);
         }
 
         public final void observe(@NonNull LifecycleOwner owner, @Nullable String ownerKey, boolean sticky, @NonNull CallbackDouble observer) {
-            this.observe(owner, ownerKey, sticky, new Observer<BasicEvent>() {
+            this.observe(owner, ownerKey, sticky, new Observer<PrimitiveEvent>() {
                 @Override
-                public void onChanged(BasicEvent event) {
+                public void onChanged(PrimitiveEvent event) {
                     observer.onChanged(event.numberDouble);
                 }
             }, false);
         }
 
         public final void observe(@NonNull LifecycleOwner owner, @Nullable String ownerKey, boolean sticky, @NonNull CallbackLong observer) {
-            this.observe(owner, ownerKey, sticky, new Observer<BasicEvent>() {
+            this.observe(owner, ownerKey, sticky, new Observer<PrimitiveEvent>() {
                 @Override
-                public void onChanged(BasicEvent event) {
+                public void onChanged(PrimitiveEvent event) {
                     observer.onChanged(event.numberLong);
                 }
             }, false);
         }
 
         public final void observe(@NonNull LifecycleOwner owner, @Nullable String ownerKey, boolean sticky, @NonNull CallbackChar observer) {
-            this.observe(owner, ownerKey, sticky, new Observer<BasicEvent>() {
+            this.observe(owner, ownerKey, sticky, new Observer<PrimitiveEvent>() {
                 @Override
-                public void onChanged(BasicEvent event) {
+                public void onChanged(PrimitiveEvent event) {
                     observer.onChanged(event.c);
                 }
             }, false);
         }
 
         public final void observe(@NonNull LifecycleOwner owner, @Nullable String ownerKey, boolean sticky, @NonNull CallbackBoolean observer) {
-            this.observe(owner, ownerKey, sticky, new Observer<BasicEvent>() {
+            this.observe(owner, ownerKey, sticky, new Observer<PrimitiveEvent>() {
                 @Override
-                public void onChanged(BasicEvent event) {
+                public void onChanged(PrimitiveEvent event) {
                     observer.onChanged(event.b);
                 }
             }, false);
@@ -359,7 +359,7 @@ public class LiveEventBus {
     /**
      * 基本数据类型的载体
      */
-    static class BasicEvent {
+    static class PrimitiveEvent {
         private String key;
         private int numberInt;
         private long numberLong;
@@ -369,7 +369,7 @@ public class LiveEventBus {
         private boolean b;
         private String s;
 
-        public BasicEvent() {
+        public PrimitiveEvent() {
             this.numberInt = 0;
             this.numberLong = 0L;
             this.numberDouble = 0;
