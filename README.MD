@@ -83,7 +83,7 @@ LiveEventBus.instance.on("key7").observeString(this){
 默认 `ownerKey = lifecycleOwner::class.qualifiedName`
 ```kotlin
 //接收事件：
-LiveEventBus.instance.on(Event::class.java).observe(ownerKey, lifecycleOwner) {
+LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner, ownerKey) {
     //
 }
 ```
