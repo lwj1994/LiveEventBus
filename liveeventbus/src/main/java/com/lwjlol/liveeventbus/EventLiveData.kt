@@ -223,14 +223,6 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         }
     }
 
-    fun getKey(owner: LifecycleOwner?) =
-        if (owner != null) {
-            owner::class.qualifiedName ?: owner::class.java.name
-        } else {
-            SystemClock.currentThreadTimeMillis().toString()
-        }
-
-
     private fun onClear(key: String) {
         val observer = foreverObserverMap[key]
         if (observer != null) {
@@ -321,6 +313,14 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     }
 
     companion object {
+        @JvmStatic
+        fun getKey(owner: LifecycleOwner?) =
+            if (owner != null) {
+                owner::class.qualifiedName ?: owner::class.java.name
+            } else {
+                SystemClock.currentThreadTimeMillis().toString()
+            }
+
         private val UNSET = Any()
         private val NULL = Any()
         private val CALL = Any()

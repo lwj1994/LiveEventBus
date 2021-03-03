@@ -8,11 +8,12 @@
 * __基于 LiveData 与 Lifecycle 紧密联系，可以自由选择是否关联 Lifecycle 的周期__
 * __可选是否支持粘性事件__
 * __只有 2 个类十分小巧，你可以直接 copy 去使用__
+* __支持直接发射基本数据类型__
 
 > __java 版本__:  https://github.com/lwj1994/LiveEventBus/blob/main/app/src/main/java/com/lwjlol/liveeventbus/javaversion/LiveEventBus.java
 
 ## 使用方法
-```
+```gradle
     allprojects {
             repositories {
                 ...
@@ -24,37 +25,63 @@
 	        implementation 'com.github.lwj1994:LiveEventBus:${latestVersion}'
 	}
 ```
-### 普通事件
 
-非粘性，必须先 `observe` 之后才能收到消息
-```
+
+普通事件非粘性，必须先 `observe` 之后才能收到消息
+```kotlin
 //接收事件：
 LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner) {
     //
 }
 
+// 发送粘性事件：
+LiveEventBus.instance.sendSticky(Event()）
 
 // 发送事件：
 LiveEventBus.instance.send(Event()）
 
 ```
-### 粘性事件
 
-* __可以先发送事件再接收__
-```
-// 发送粘性事件：
-LiveEventBus.instance.sendSticky(Event()）
+### 支持直接发射基本数据类型
 
-//接收粘性事件：
-LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner) {
-    //
+```kotlin
+LiveEventBus.instance.send(key,1)
+LiveEventBus.instance.send(key,1F)
+LiveEventBus.instance.send(key,1.0)
+LiveEventBus.instance.send(key,"text")
+LiveEventBus.instance.send(key,false)
+LiveEventBus.instance.send(key,1L)
+LiveEventBus.instance.send(key,'A')
+
+
+LiveEventBus.instance.on("key1").observeInt(this){
+
+}
+
+LiveEventBus.instance.on("key2").observeBoolean(this){
+
+}
+LiveEventBus.instance.on("key3").observeLong(this){
+
+}
+LiveEventBus.instance.on("key3").observeDouble(this){
+
+}
+LiveEventBus.instance.on("key4").observeFloat(this){
+
+}
+LiveEventBus.instance.on("key5").observeChar(this){
+
+}
+LiveEventBus.instance.on("key6").observeString(this){
+
 }
 ```
 
 ## 自定义 ownerKey
 你可以根据需求，传入自定义的 ownerKey，该库会根据 ownerKey 来决定是否接收事件：一个事件只能被一个 ownerKey 消费一次。
 默认 `ownerKey = lifecycleOwner::class.qualifiedName`
-```
+```kotlin
 //接收事件：
 LiveEventBus.instance.on(Event::class.java).observe(ownerKey, lifecycleOwner) {
     //
@@ -69,7 +96,7 @@ LiveEventBus.instance.on(Event::class.java).observe(ownerKey, lifecycleOwner) {
 避免在 onActive 时响应回调的原理很简单，重写了 observe，给 `LifecycleOwner` 配上一个 ownerKey 参数。
 * 判断当前的 ownerKey 是否已经注册过来实现是否是粘性
 * 为每一个 ownerKey 单独保存 value，消费完一个事件立马置为 UNSET 状态，判断当前的 ownerKey 是否是 UNSET 状态决定是否响应回调
-```
+```kotlin
 fun observe(
         owner: LifecycleOwner,
         ownerKey: String = getKey(owner),
@@ -78,6 +105,6 @@ fun observe(
 ```
 
 ownerKey 的默认实现是当前 `LifecycleOwner` 的全路径类名，可以根据实际需求传入 ownerKey：
-```
+```kotlin
 fun getKey(owner: LifecycleOwner) = "${owner::class.qualifiedName}"
 ```

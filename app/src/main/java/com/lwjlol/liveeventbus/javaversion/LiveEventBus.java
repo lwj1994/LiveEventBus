@@ -359,7 +359,7 @@ public class LiveEventBus {
     /**
      * 基本数据类型的载体
      */
-    static class PrimitiveEvent {
+    public static class PrimitiveEvent {
         private String key;
         private int numberInt;
         private long numberLong;

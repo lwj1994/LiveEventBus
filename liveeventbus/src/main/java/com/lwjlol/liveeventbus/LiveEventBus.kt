@@ -1,6 +1,7 @@
 package com.lwjlol.liveeventbus
 
 import android.os.Looper
+import android.util.Log
 import androidx.annotation.MainThread
 import androidx.annotation.RestrictTo
 import androidx.collection.ArrayMap
@@ -62,6 +63,9 @@ class LiveEventBus private constructor() {
         return Bus(clazz, eventMap, stickyEventMap)
     }
 
+    /**
+     * @param eventKey 基本数据类型的事件 key
+     */
     fun on(eventKey: String): PrimitiveBus {
         return PrimitiveBus(eventKey, eventMap, stickyEventMap)
     }
@@ -75,44 +79,47 @@ class LiveEventBus private constructor() {
     }
 
     @MainThread
-    fun send(eventKey: String, value: String, sticky: Boolean = false) {
-        send(PrimitiveEvent(eventKey = eventKey, stringValue = value), sticky)
+    fun send(eventKey: String, value: String, sticky: Boolean = true) {
+        send(PrimitiveStringEvent(eventKey = eventKey, stringValue = value), sticky)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Int, sticky: Boolean = false) {
-        send(PrimitiveEvent(eventKey = eventKey, intValue = value), sticky)
+    fun send(eventKey: String, value: Int, sticky: Boolean = true) {
+        send(PrimitiveIntEvent(eventKey = eventKey, intValue = value), sticky)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Long, sticky: Boolean = false) {
-        send(PrimitiveEvent(eventKey = eventKey, longValue = value), sticky)
+    fun send(eventKey: String, value: Long, sticky: Boolean = true) {
+        send(PrimitiveLongEvent(eventKey = eventKey, longValue = value), sticky)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Double, sticky: Boolean = false) {
-        send(PrimitiveEvent(eventKey = eventKey, doubleValue = value), sticky)
+    fun send(eventKey: String, value: Double, sticky: Boolean = true) {
+        send(PrimitiveDoubleEvent(eventKey = eventKey, doubleValue = value), sticky)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Float, sticky: Boolean = false) {
-        send(PrimitiveEvent(eventKey = eventKey, floatValue = value), sticky)
+    fun send(eventKey: String, value: Float, sticky: Boolean = true) {
+        send(PrimitiveFloatEvent(eventKey = eventKey, floatValue = value), sticky)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Char, sticky: Boolean = false) {
-        send(PrimitiveEvent(eventKey = eventKey, charValue = value), sticky)
+    fun send(eventKey: String, value: Char, sticky: Boolean = true) {
+        send(PrimitiveCharEvent(eventKey = eventKey, charValue = value), sticky)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Boolean, sticky: Boolean = false) {
-        send(PrimitiveEvent(eventKey = eventKey, booleanValue = value), sticky)
+    fun send(eventKey: String, value: Boolean, sticky: Boolean = true) {
+        send(PrimitiveBooleanEvent(eventKey = eventKey, booleanValue = value), sticky)
     }
 
+    /**
+     * @param sticky 默认 true，发送粘性事件
+     */
     @MainThread
     fun send(
         event: Any,
-        sticky: Boolean = false
+        sticky: Boolean = true
     ) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             synchronized(this) {
@@ -140,17 +147,10 @@ class LiveEventBus private constructor() {
         }
     }
 
-    @MainThread
-    fun sendSticky(event: Any) = send(event, true)
-
-    @MainThread
-    fun send(event: Any) = send(event, false)
-
     private object Singleton {
         val instance = LiveEventBus()
     }
 
-    @RestrictTo(RestrictTo.Scope.LIBRARY)
     class Bus<T>(
         private val clazz: Class<T>,
         private val liveDataMap: LruCache<Class<*>, EventLiveData<*>>,
@@ -175,21 +175,21 @@ class LiveEventBus private constructor() {
                 liveDataMap,
                 stickyEventMap
             ) as Pair<EventLiveData<T>, EventLiveData<T>>
-            val k = ownerKey ?: liveData.getKey(owner)
+            val k = ownerKey ?: EventLiveData.getKey(owner)
             if (forever) {
                 liveData.observeForever(owner, k, observer)
                 stickyLiveData.observeForever(owner, k, observer)
             } else {
                 liveData.observe(owner, k, observer)
-                stickyLiveData.observeForever(owner, k, observer)
+                stickyLiveData.observe(owner, k, observer)
             }
         }
     }
 
 
-    @RestrictTo(RestrictTo.Scope.LIBRARY)
     class PrimitiveBus(
-        val eventKey: String = "",
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        val eventKey: String,
         private val liveDataMap: LruCache<Class<*>, EventLiveData<*>>,
         private val stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
     ) {
@@ -200,7 +200,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Int) -> Unit
         ) {
-            this.observe(owner, ownerKey, forever = forever) {
+            this.observeInt(owner, ownerKey, eventKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.intValue)
                 }
@@ -213,7 +213,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Long) -> Unit
         ) {
-            this.observe(owner, ownerKey, forever = forever) {
+            this.observeLong(owner, ownerKey, eventKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.longValue)
                 }
@@ -226,7 +226,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Double) -> Unit
         ) {
-            this.observe(owner, ownerKey, forever = forever) {
+            this.observeDouble(owner, ownerKey, eventKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.doubleValue)
                 }
@@ -239,7 +239,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Float) -> Unit
         ) {
-            this.observe(owner, ownerKey, forever = forever) {
+            this.observeFloat(owner, ownerKey, eventKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.floatValue)
                 }
@@ -252,7 +252,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Boolean) -> Unit
         ) {
-            this.observe(owner, ownerKey, forever = forever) {
+            this.observeBoolean(owner, ownerKey, eventKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.booleanValue)
                 }
@@ -265,7 +265,7 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (Char) -> Unit
         ) {
-            this.observe(owner, ownerKey, forever = forever) {
+            this.observeChar(owner, ownerKey, eventKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.charValue)
                 }
@@ -278,27 +278,179 @@ class LiveEventBus private constructor() {
             forever: Boolean = false,
             crossinline block: (String) -> Unit
         ) {
-            this.observe(owner, ownerKey, forever = forever) {
+            this.observeString(owner, ownerKey, eventKey, forever = forever) {
                 if (it.eventKey == eventKey) {
                     block(it.stringValue)
                 }
             }
         }
 
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
         @Suppress("UNCHECKED_CAST")
-        fun observe(
+        fun observeDouble(
             owner: LifecycleOwner,
-            key: String?,
+            ownerKey: String?,
+            eventKey: String,
             forever: Boolean,
-            observer: Observer<in PrimitiveEvent>,
+            observer: Observer<in PrimitiveDoubleEvent>,
         ) {
             val (liveData, stickyLiveData) =
                 getLiveData(
-                    PrimitiveEvent::class.java,
+                    PrimitiveDoubleEvent::class.java,
                     liveDataMap,
                     stickyEventMap
-                ) as Pair<EventLiveData<PrimitiveEvent>, EventLiveData<PrimitiveEvent>>
-            val k = key ?: liveData.getKey(owner)
+                ) as Pair<EventLiveData<PrimitiveDoubleEvent>, EventLiveData<PrimitiveDoubleEvent>>
+            val k = "${(ownerKey ?: EventLiveData.getKey(owner))}_${eventKey}"
+            if (forever) {
+                liveData.observeForever(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
+            } else {
+                liveData.observe(owner, k, observer)
+                stickyLiveData.observe(owner, k, observer)
+            }
+        }
+
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        @Suppress("UNCHECKED_CAST")
+        fun observeFloat(
+            owner: LifecycleOwner,
+            ownerKey: String?,
+            eventKey: String,
+            forever: Boolean,
+            observer: Observer<in PrimitiveFloatEvent>,
+        ) {
+            val (liveData, stickyLiveData) =
+                getLiveData(
+                    PrimitiveFloatEvent::class.java,
+                    liveDataMap,
+                    stickyEventMap
+                ) as Pair<EventLiveData<PrimitiveFloatEvent>, EventLiveData<PrimitiveFloatEvent>>
+            val k = "${(ownerKey ?: EventLiveData.getKey(owner))}_${eventKey}"
+            if (forever) {
+                liveData.observeForever(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
+            } else {
+                liveData.observe(owner, k, observer)
+                stickyLiveData.observe(owner, k, observer)
+            }
+        }
+
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        @Suppress("UNCHECKED_CAST")
+        fun observeLong(
+            owner: LifecycleOwner,
+            ownerKey: String?,
+            eventKey: String,
+            forever: Boolean,
+            observer: Observer<in PrimitiveLongEvent>,
+        ) {
+            val (liveData, stickyLiveData) =
+                getLiveData(
+                    PrimitiveLongEvent::class.java,
+                    liveDataMap,
+                    stickyEventMap
+                ) as Pair<EventLiveData<PrimitiveLongEvent>, EventLiveData<PrimitiveLongEvent>>
+            val k = "${(ownerKey ?: EventLiveData.getKey(owner))}_${eventKey}"
+            if (forever) {
+                liveData.observeForever(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
+            } else {
+                liveData.observe(owner, k, observer)
+                stickyLiveData.observe(owner, k, observer)
+            }
+        }
+
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        @Suppress("UNCHECKED_CAST")
+        fun observeInt(
+            owner: LifecycleOwner,
+            ownerKey: String?,
+            eventKey: String,
+            forever: Boolean,
+            observer: Observer<in PrimitiveIntEvent>,
+        ) {
+            val (liveData, stickyLiveData) =
+                getLiveData(
+                    PrimitiveIntEvent::class.java,
+                    liveDataMap,
+                    stickyEventMap
+                ) as Pair<EventLiveData<PrimitiveIntEvent>, EventLiveData<PrimitiveIntEvent>>
+            val k = "${(ownerKey ?: EventLiveData.getKey(owner))}_${eventKey}"
+            if (forever) {
+                liveData.observeForever(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
+            } else {
+                liveData.observe(owner, k, observer)
+                stickyLiveData.observe(owner, k, observer)
+            }
+        }
+
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        @Suppress("UNCHECKED_CAST")
+        fun observeBoolean(
+            owner: LifecycleOwner,
+            ownerKey: String?,
+            eventKey: String,
+            forever: Boolean,
+            observer: Observer<in PrimitiveBooleanEvent>,
+        ) {
+            val (liveData, stickyLiveData) =
+                getLiveData(
+                    PrimitiveBooleanEvent::class.java,
+                    liveDataMap,
+                    stickyEventMap
+                ) as Pair<EventLiveData<PrimitiveBooleanEvent>, EventLiveData<PrimitiveBooleanEvent>>
+            val k = "${(ownerKey ?: EventLiveData.getKey(owner))}_${eventKey}"
+            if (forever) {
+                liveData.observeForever(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
+            } else {
+                liveData.observe(owner, k, observer)
+                stickyLiveData.observe(owner, k, observer)
+            }
+        }
+
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        @Suppress("UNCHECKED_CAST")
+        fun observeChar(
+            owner: LifecycleOwner,
+            ownerKey: String?,
+            eventKey: String,
+            forever: Boolean,
+            observer: Observer<in PrimitiveCharEvent>,
+        ) {
+            val (liveData, stickyLiveData) =
+                getLiveData(
+                    PrimitiveCharEvent::class.java,
+                    liveDataMap,
+                    stickyEventMap
+                ) as Pair<EventLiveData<PrimitiveCharEvent>, EventLiveData<PrimitiveCharEvent>>
+            val k = "${(ownerKey ?: EventLiveData.getKey(owner))}_${eventKey}"
+            if (forever) {
+                liveData.observeForever(owner, k, observer)
+                stickyLiveData.observeForever(owner, k, observer)
+            } else {
+                liveData.observe(owner, k, observer)
+                stickyLiveData.observe(owner, k, observer)
+            }
+        }
+
+        @RestrictTo(RestrictTo.Scope.LIBRARY)
+        @Suppress("UNCHECKED_CAST")
+        fun observeString(
+            owner: LifecycleOwner,
+            ownerKey: String?,
+            eventKey: String,
+            forever: Boolean,
+            observer: Observer<in PrimitiveStringEvent>,
+        ) {
+            val (liveData, stickyLiveData) =
+                getLiveData(
+                    PrimitiveStringEvent::class.java,
+                    liveDataMap,
+                    stickyEventMap
+                ) as Pair<EventLiveData<PrimitiveStringEvent>, EventLiveData<PrimitiveStringEvent>>
+            val k = "${(ownerKey ?: EventLiveData.getKey(owner))}_${eventKey}"
             if (forever) {
                 liveData.observeForever(owner, k, observer)
                 stickyLiveData.observeForever(owner, k, observer)
@@ -313,15 +465,71 @@ class LiveEventBus private constructor() {
      * 基本数据类型事件
      */
     @RestrictTo(RestrictTo.Scope.LIBRARY)
-    data class PrimitiveEvent(
+    data class PrimitiveStringEvent(
         val eventKey: String = "",
         val sticky: Boolean = false,
-        val booleanValue: Boolean = false,
-        val stringValue: String = "",
-        val intValue: Int = 0,
-        val longValue: Long = 0L,
-        val doubleValue: Double = 0.0,
-        val floatValue: Float = 0F,
+        val stringValue: String = ""
+    )
+
+    /**
+     * 基本数据类型事件
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    data class PrimitiveIntEvent(
+        val eventKey: String = "",
+        val sticky: Boolean = false,
+        val intValue: Int = 0
+    )
+
+    /**
+     * 基本数据类型事件
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    data class PrimitiveLongEvent(
+        val eventKey: String = "",
+        val sticky: Boolean = false,
+        val longValue: Long = 0L
+    )
+
+
+    /**
+     * 基本数据类型事件
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    data class PrimitiveFloatEvent(
+        val eventKey: String = "",
+        val sticky: Boolean = false,
+        val floatValue: Float = 0F
+    )
+
+    /**
+     * 基本数据类型事件
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    data class PrimitiveDoubleEvent(
+        val eventKey: String = "",
+        val sticky: Boolean = false,
+        val doubleValue: Double = 0.0
+    )
+
+    /**
+     * 基本数据类型事件
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    data class PrimitiveBooleanEvent(
+        val eventKey: String = "",
+        val sticky: Boolean = false,
+        val booleanValue: Boolean = false
+    )
+
+
+    /**
+     * 基本数据类型事件
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    data class PrimitiveCharEvent(
+        val eventKey: String = "",
+        val sticky: Boolean = false,
         val charValue: Char = ' '
     )
 }
