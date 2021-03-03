@@ -34,11 +34,10 @@ LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner) {
     //
 }
 
-// 发送粘性事件：
-LiveEventBus.instance.sendSticky(Event()）
 
-// 发送事件：
-LiveEventBus.instance.send(Event()）
+// 发送事件, sticky:是否粘性，默认 true
+// forever: 是否一直观察事件，默认 false
+LiveEventBus.instance.send(Event(), sticty = true, forever = false）
 
 ```
 
