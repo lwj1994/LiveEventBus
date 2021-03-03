@@ -45,13 +45,13 @@ LiveEventBus.instance.send(Event()）
 ### 支持直接发射基本数据类型
 
 ```kotlin
-LiveEventBus.instance.send(key,1)
-LiveEventBus.instance.send(key,1F)
-LiveEventBus.instance.send(key,1.0)
-LiveEventBus.instance.send(key,"text")
-LiveEventBus.instance.send(key,false)
-LiveEventBus.instance.send(key,1L)
-LiveEventBus.instance.send(key,'A')
+LiveEventBus.instance.send("key1",1)
+LiveEventBus.instance.send("key2",false)
+LiveEventBus.instance.send("key3",1L)
+LiveEventBus.instance.send("key4",1.0)
+LiveEventBus.instance.send("key5",1F)
+LiveEventBus.instance.send("key6",'A')
+LiveEventBus.instance.send("key7","text")
 
 
 LiveEventBus.instance.on("key1").observeInt(this){
@@ -64,16 +64,16 @@ LiveEventBus.instance.on("key2").observeBoolean(this){
 LiveEventBus.instance.on("key3").observeLong(this){
 
 }
-LiveEventBus.instance.on("key3").observeDouble(this){
+LiveEventBus.instance.on("key4").observeDouble(this){
 
 }
-LiveEventBus.instance.on("key4").observeFloat(this){
+LiveEventBus.instance.on("key5").observeFloat(this){
 
 }
-LiveEventBus.instance.on("key5").observeChar(this){
+LiveEventBus.instance.on("key6").observeChar(this){
 
 }
-LiveEventBus.instance.on("key6").observeString(this){
+LiveEventBus.instance.on("key7").observeString(this){
 
 }
 ```
