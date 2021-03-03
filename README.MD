@@ -14,16 +14,16 @@
 
 ## 使用方法
 ```gradle
-    allprojects {
-            repositories {
-                ...
-                maven { url 'https://jitpack.io' }
-            }
+allprojects {
+    repositories {
+        ...
+        maven { url 'https://jitpack.io' }
     }
+}
 
-	dependencies {
-	        implementation 'com.github.lwj1994:LiveEventBus:${latestVersion}'
-	}
+dependencies {
+    implementation 'com.github.lwj1994:LiveEventBus:${latestVersion}'
+}
 ```
 
 
