@@ -27,9 +27,9 @@ dependencies {
 ```
 
 
-普通事件非粘性，必须先 `observe` 之后才能收到消息
+
 ```kotlin
-//接收事件：
+//注册接收事件：
 LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner) {
     //
 }
