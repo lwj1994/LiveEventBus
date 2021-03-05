@@ -1,10 +1,8 @@
 package com.lwjlol.liveeventbus
 
 import android.os.Looper
-import android.util.Log
 import androidx.annotation.MainThread
 import androidx.annotation.RestrictTo
-import androidx.collection.ArrayMap
 import androidx.collection.LruCache
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -12,10 +10,10 @@ import androidx.lifecycle.Observer
 
 class LiveEventBus private constructor() {
     private val eventMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
-    private val stickyEventMap = ArrayMap<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
+    private val stickyEventMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
 
     companion object {
-        private const val DEFAULT_MAX_EVENT = 20
+        private const val DEFAULT_MAX_EVENT = 100
 
         val instance = Singleton.instance
 
@@ -23,7 +21,7 @@ class LiveEventBus private constructor() {
         private fun getLiveData(
             clazz: Class<*>,
             eventMap: LruCache<Class<*>, EventLiveData<*>>,
-            stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
+            stickyEventMap: LruCache<Class<*>, EventLiveData<*>>
         ): Pair<EventLiveData<Any>, EventLiveData<Any>> {
             val eventLiveData: EventLiveData<Any> = (eventMap[clazz] ?: createAndPutLiveData(
                 clazz,
@@ -44,11 +42,11 @@ class LiveEventBus private constructor() {
             clazz: Class<*>,
             sticky: Boolean,
             eventMap: LruCache<Class<*>, EventLiveData<*>>,
-            stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
+            stickyEventMap: LruCache<Class<*>, EventLiveData<*>>
         ): EventLiveData<Any> {
             val liveData = EventLiveData<Any>(sticky)
             if (sticky) {
-                stickyEventMap[clazz] = liveData
+                stickyEventMap.put(clazz, liveData)
             } else {
                 eventMap.put(clazz, liveData)
             }
@@ -74,53 +72,59 @@ class LiveEventBus private constructor() {
      * 清空所有的事件缓存
      */
     fun clear() {
-        stickyEventMap.clear()
+        stickyEventMap.evictAll()
         eventMap.evictAll()
     }
 
     @MainThread
-    fun send(eventKey: String, value: String, sticky: Boolean = true) {
-        send(PrimitiveStringEvent(eventKey = eventKey, stringValue = value), sticky)
+    fun send(eventKey: String, value: String, sticky: Boolean = true, post: Boolean = false) {
+        send(PrimitiveStringEvent(eventKey = eventKey, stringValue = value), sticky, post)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Int, sticky: Boolean = true) {
-        send(PrimitiveIntEvent(eventKey = eventKey, intValue = value), sticky)
+    fun send(eventKey: String, value: Int, sticky: Boolean = true, post: Boolean = false) {
+        send(PrimitiveIntEvent(eventKey = eventKey, intValue = value), sticky, post)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Long, sticky: Boolean = true) {
-        send(PrimitiveLongEvent(eventKey = eventKey, longValue = value), sticky)
+    fun send(eventKey: String, value: Long, sticky: Boolean = true, post: Boolean = false) {
+        send(PrimitiveLongEvent(eventKey = eventKey, longValue = value), sticky, post)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Double, sticky: Boolean = true) {
-        send(PrimitiveDoubleEvent(eventKey = eventKey, doubleValue = value), sticky)
+    fun send(eventKey: String, value: Double, sticky: Boolean = true, post: Boolean = false) {
+        send(PrimitiveDoubleEvent(eventKey = eventKey, doubleValue = value), sticky, post)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Float, sticky: Boolean = true) {
-        send(PrimitiveFloatEvent(eventKey = eventKey, floatValue = value), sticky)
+    fun send(eventKey: String, value: Float, sticky: Boolean = true, post: Boolean = false) {
+        send(PrimitiveFloatEvent(eventKey = eventKey, floatValue = value), sticky, post)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Char, sticky: Boolean = true) {
-        send(PrimitiveCharEvent(eventKey = eventKey, charValue = value), sticky)
+    fun send(eventKey: String, value: Char, sticky: Boolean = true, post: Boolean = false) {
+        send(PrimitiveCharEvent(eventKey = eventKey, charValue = value), sticky, post)
     }
 
     @MainThread
-    fun send(eventKey: String, value: Boolean, sticky: Boolean = true) {
-        send(PrimitiveBooleanEvent(eventKey = eventKey, booleanValue = value), sticky)
+    fun send(eventKey: String, value: Boolean, sticky: Boolean = true, post: Boolean = false) {
+        send(PrimitiveBooleanEvent(eventKey = eventKey, booleanValue = value), sticky, post)
     }
 
     /**
      * @param sticky 默认 true，发送粘性事件
+     * @param post 是否 post
      */
     @MainThread
     fun send(
         event: Any,
-        sticky: Boolean = true
+        sticky: Boolean = true,
+        post: Boolean = false
     ) {
+        if (post) {
+            getSingleLiveData(event, sticky).postValue(event)
+            return
+        }
         if (Looper.myLooper() != Looper.getMainLooper()) {
             synchronized(this) {
                 getSingleLiveData(event, sticky).postValue(event)
@@ -154,7 +158,7 @@ class LiveEventBus private constructor() {
     class Bus<T>(
         private val clazz: Class<T>,
         private val liveDataMap: LruCache<Class<*>, EventLiveData<*>>,
-        private val stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
+        private val stickyEventMap: LruCache<Class<*>, EventLiveData<*>>
     ) {
 
         /**
@@ -191,7 +195,7 @@ class LiveEventBus private constructor() {
         @RestrictTo(RestrictTo.Scope.LIBRARY)
         val eventKey: String,
         private val liveDataMap: LruCache<Class<*>, EventLiveData<*>>,
-        private val stickyEventMap: ArrayMap<Class<*>, EventLiveData<*>>
+        private val stickyEventMap: LruCache<Class<*>, EventLiveData<*>>
     ) {
 
         inline fun observeInt(

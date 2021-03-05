@@ -4,9 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
 import com.lwjlol.liveeventbus.EventLiveData
 import com.lwjlol.liveeventbus.LiveEventBus
 
@@ -18,12 +16,13 @@ class MainActivity : AppCompatActivity() {
     val liveData = EventLiveData<String>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_main)
 //        liveData.value = null
         liveData.observeNonNull(this) {
             findViewById<TextView>(R.id.text).text = "${it}"
         }
+        findViewById<TextView>(R.id.text).text =
+            findViewById<View>(R.id.view_container).id.toString()
 
         LiveEventBus.instance.on(SecondEvent::class.java).observe(this,forever = true){
 //            Toast.makeText(this,it.name+",state:${lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)}",Toast.LENGTH_LONG).show()

@@ -9,6 +9,7 @@ class SecondActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sec)
+        findViewById<TextView>(R.id.text).text = R.id.view_container.toString()
         findViewById<TextView>(R.id.send).setOnClickListener {
             LiveEventBus.instance.send(SecondEvent("event from SecondActivity"))
             LiveEventBus.instance.send("key1",1)
