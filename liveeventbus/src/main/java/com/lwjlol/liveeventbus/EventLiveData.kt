@@ -170,12 +170,12 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
 
     fun removeObserver(key: String? = null, observer: Observer<in T>) {
         super.removeObserver(observer)
-        reset(key ?: observer.toString())
+        remove(key ?: observer.toString())
     }
 
     override fun removeObserver(observer: Observer<in T>) {
         super.removeObserver(observer)
-        reset(observer.toString())
+        remove(observer.toString())
     }
 
     fun LifecycleOwner.get() = if (this is Fragment && view != null) viewLifecycleOwner else this
@@ -228,7 +228,7 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         if (observer != null) {
             removeObserver(observer)
         } else {
-            reset(key)
+            remove(key)
         }
     }
 
@@ -305,11 +305,11 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         return "$address:\n$sb"
     }
 
-    private fun reset(key: String) {
-        tempValueMap[key] = null
-        isObservedMap[key] = null
-        callMap[key] = null
-        foreverObserverMap[key] = null
+    private fun remove(key: String) {
+        tempValueMap.remove(key)
+        isObservedMap.remove(key)
+        callMap.remove(key)
+        foreverObserverMap.remove(key)
     }
 
     companion object {
