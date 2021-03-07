@@ -10,10 +10,29 @@ import androidx.lifecycle.Observer
 
 class LiveEventBus private constructor() {
     private val eventMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
-    private val stickyEventMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_EVENT)
+    private val stickyEventMap = LruCache<Class<*>, EventLiveData<*>>(DEFAULT_MAX_STICKY_EVENT)
+
+    private var init = false
+
+
+    /**
+     * @param maxCacheSize 最大的缓存事件数量
+     */
+    fun init(maxCacheSize: Int) {
+        if (init) {
+            return
+        }
+        init = true
+        eventMap.resize(maxCacheSize)
+        stickyEventMap.resize(maxCacheSize)
+    }
 
     companion object {
-        private const val DEFAULT_MAX_EVENT = 100
+        // 最大的非粘性事件缓存
+        private const val DEFAULT_MAX_EVENT = 16
+
+        // 最大的粘性事件缓存
+        private const val DEFAULT_MAX_STICKY_EVENT = 16
 
         val instance = Singleton.instance
 
@@ -121,16 +140,16 @@ class LiveEventBus private constructor() {
         sticky: Boolean = true,
         post: Boolean = false
     ) {
-        if (post) {
-            getSingleLiveData(event, sticky).postValue(event)
-            return
-        }
         if (Looper.myLooper() != Looper.getMainLooper()) {
             synchronized(this) {
                 getSingleLiveData(event, sticky).postValue(event)
             }
         } else {
-            getSingleLiveData(event, sticky).value = event
+            if (post) {
+                getSingleLiveData(event, sticky).postValue(event)
+            } else {
+                getSingleLiveData(event, sticky).value = event
+            }
         }
     }
 

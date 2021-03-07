@@ -45,7 +45,7 @@ class LiveEventBusObserveMultiTest {
         // 启动 MainActivity
         rule.scenario.onActivity {
             LiveEventBus.instance.on(LiveEventBusObserveMultiTestEvent::class.java)
-                .observeForever(it) {
+                .observe(it) {
                     Log.d(TAG, it.name)
                 }
             launchSecond(it)
@@ -54,7 +54,7 @@ class LiveEventBusObserveMultiTest {
     }
 
     fun launchSecond(it: Activity) {
-        onView(withId(R.id.textview)).perform(ViewActions.click())
+//        onView(withId(R.id.textview)).perform(ViewActions.click())
     }
 
     fun launchThird(it: Activity) {
