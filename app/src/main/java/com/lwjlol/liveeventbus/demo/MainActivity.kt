@@ -45,12 +45,12 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.call).setOnClickListener {
             Thread {
-                liveData.call()
+//                liveData.call()
                 liveData.postValue(null)
                 liveData.postValue("23123")
                 liveData.postValue("2")
                 liveData.postValue("3")
-                liveData.call()
+//                liveData.call()
 
             }.start()
 

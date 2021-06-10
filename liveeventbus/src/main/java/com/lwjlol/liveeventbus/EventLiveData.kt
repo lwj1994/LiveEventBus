@@ -14,10 +14,11 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
     private val tempValueMap = ArrayMap<String, Any?>(2)
-    private val foreverObserverMap = ArrayMap<String, Observer<T>>(2)
+    private val foreverObserverMap = ArrayMap<KeyWrapper, Observer<T>>(2)
     private val callMap = ArrayMap<String, Int>(2)
     private var isObservedMap = ArrayMap<String, Boolean>(2)
     private val callCount = AtomicInteger(0)
+    private val keyMap = ArrayMap<String, ArrayList<KeyWrapper>>(2)
 
     /**
      * 最后一个事件是否是 [call] 发出的
@@ -87,7 +88,8 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         key: String = getKey(owner),
         observer: Observer<in T>
     ) {
-        onObserve(owner, key)
+        val keyWrapper = KeyWrapper(key, owner, observer)
+        onObserve(keyWrapper)
         super.observe(owner.get(), getObserverWrapper(key, observer))
     }
 
@@ -136,9 +138,10 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         observer: Observer<in T>
     ) {
         val k = key ?: getKey(owner)
-        onObserve(owner, k)
+        val keyWrapper = KeyWrapper(k, owner, observer)
+        onObserve(keyWrapper)
         super.observeForever(getObserverWrapper(k, observer).also {
-            foreverObserverMap[key] = it
+            foreverObserverMap[keyWrapper] = it
         })
     }
 
@@ -168,23 +171,30 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         })
     }
 
-    fun removeObserver(key: String? = null, observer: Observer<in T>) {
+    private fun removeObserver(keyWrapper: KeyWrapper, observer: Observer<in T>) {
         super.removeObserver(observer)
-        remove(key ?: observer.toString())
+        remove(keyWrapper)
     }
 
     override fun removeObserver(observer: Observer<in T>) {
         super.removeObserver(observer)
-        remove(observer.toString())
+        foreverObserverMap.keys.find {
+            it.observer == observer
+        }?.let {
+            foreverObserverMap.remove(it)
+        }
     }
 
     fun LifecycleOwner.get() = if (this is Fragment && view != null) viewLifecycleOwner else this
 
-    private fun onObserve(
-        owner: LifecycleOwner?,
-        key: String
-    ) {
-        (owner?.get())?.lifecycle?.addObserver(OnDestroyLifecycleObserver(this, key))
+    private fun onObserve(keyWrapper: KeyWrapper) {
+        val key = keyWrapper.key
+        val owner = keyWrapper.lifecycleOwner
+        if (keyMap[key] == null) {
+            keyMap[key] = ArrayList(4)
+        }
+        keyMap[key]?.add(keyWrapper)
+        (owner?.get())?.lifecycle?.addObserver(OnDestroyLifecycleObserver(keyWrapper, this))
         isObservedMap[key] = true
         if (tempValueMap[key] == null) {
             tempValueMap[key] = if (!sticky || value == null) {
@@ -223,24 +233,30 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         }
     }
 
-    private fun onClear(key: String) {
-        val observer = foreverObserverMap[key]
+    private fun onClear(keyWrapper: KeyWrapper) {
+        val observer = foreverObserverMap[keyWrapper]
         if (observer != null) {
-            removeObserver(observer)
+            removeObserver(keyWrapper, observer)
         } else {
-            remove(key)
+            remove(keyWrapper)
         }
     }
 
     private class OnDestroyLifecycleObserver<T>(
-        private val livaData: EventLiveData<T>,
-        private val key: String
+        private val keyWrapper: KeyWrapper,
+        private val livaData: EventLiveData<T>
     ) : LifecycleObserver {
         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        fun onDestroy() {
-            livaData.onClear(key)
+        fun onDestroyView() {
+            livaData.onClear(keyWrapper)
         }
     }
+
+    data class KeyWrapper(
+        val key: String,
+        val lifecycleOwner: LifecycleOwner? = null,
+        val observer: Observer<*>? = null
+    )
 
     override fun toString(): String {
         val sb = StringBuilder()
@@ -305,18 +321,21 @@ class EventLiveData<T>(val sticky: Boolean = true) : MutableLiveData<T>() {
         return "$address:\n$sb"
     }
 
-    private fun remove(key: String) {
-        tempValueMap.remove(key)
-        isObservedMap.remove(key)
-        callMap.remove(key)
-        foreverObserverMap.remove(key)
+    private fun remove(keyWrapper: KeyWrapper) {
+        foreverObserverMap.remove(keyWrapper)
+        keyMap[keyWrapper.key]?.remove(keyWrapper)
+        if (keyMap[keyWrapper.key].isNullOrEmpty()) {
+            tempValueMap.remove(keyWrapper.key)
+            callMap.remove(keyWrapper.key)
+            isObservedMap.remove(keyWrapper.key)
+        }
     }
 
     companion object {
         @JvmStatic
-        fun getKey(owner: LifecycleOwner?) =
+        fun getKey(owner: LifecycleOwner?): String =
             if (owner != null) {
-                owner::class.qualifiedName ?: owner::class.java.name
+                owner::class.qualifiedName ?: owner::class.java.name ?: ""
             } else {
                 SystemClock.currentThreadTimeMillis().toString()
             }
