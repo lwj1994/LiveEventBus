@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.text).text = findViewById<TextView>(R.id.text).text.toString() + "\n$it"
         }
         findViewById<View>(R.id.send).setOnClickListener {
-            LiveEventBus.instance.send(FirstEvent("sticky event from MainActivity"),sticky = true)
+            LiveEventBus.instance.send(StickyEvent("sticky event from MainActivity"), sticky = true)
 
         }
         findViewById<View>(R.id.call).setOnClickListener {
