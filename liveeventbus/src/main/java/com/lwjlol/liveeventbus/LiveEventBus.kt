@@ -34,7 +34,8 @@ class LiveEventBus private constructor() {
         // 最大的粘性事件缓存
         private const val DEFAULT_MAX_STICKY_EVENT = 16
 
-        val instance = Singleton.instance
+        val instance: LiveEventBus
+            get() = Singleton.instance
 
         @Suppress("UNCHECKED_CAST")
         private fun getLiveData(

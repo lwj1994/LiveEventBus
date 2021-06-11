@@ -37,6 +37,7 @@ LiveEventBus.instance.on(Event::class.java).observe(lifecycleOwner) {
 
 // 发送事件, sticky:是否粘性，默认 true
 // forever: 是否一直观察事件，默认 false
+// post:是否使用 liveData.postValue 发送，默认会根据是否主线程识别：子线程用 post 主线程用 setValue
 LiveEventBus.instance.send(Event(), sticty = true, forever = false）
 
 ```
